@@ -11,7 +11,7 @@ data class Course(
     val rating: Double = 4.9,
     val studentCount: String = "4.5k+ Students",
     val batchDate: String = "Starts Oct 20, 2026",
-    val faculty: String = "Prof. R. K. Sharma (Ex-Examiner)",
+    val faculty: String = "Krishna Kumar",
     val validity: String = "12 Months Validity",
     val category: String = "Spoken & Grammar",
     val isLive: Boolean = true,
@@ -22,7 +22,52 @@ data class Course(
         "Weekly Live Doubt Clearing Sessions",
         "50+ Topic-wise Practice Mock Tests",
         "Certificate of Completion"
-    )
+    ),
+    val subjects: List<Subject> = emptyList()
+)
+
+data class Subject(
+    val id: String,
+    val name: String,
+    val icon: String = "📖",
+    val visible: Boolean = true,
+    val chapters: List<Chapter> = emptyList()
+)
+
+data class Chapter(
+    val id: String,
+    val title: String,
+    val order: Int = 1,
+    val visible: Boolean = true,
+    val lectures: List<LectureItem> = emptyList(),
+    val pdfs: List<PdfItem> = emptyList(),
+    val practices: List<PracticeItem> = emptyList()
+)
+
+data class LectureItem(
+    val id: String,
+    val title: String,
+    val videoId: String,
+    val duration: String = "25:00",
+    val isFree: Boolean = true,
+    val visible: Boolean = true
+)
+
+data class PdfItem(
+    val id: String,
+    val title: String,
+    val pages: String = "14 Pages",
+    val size: String = "2.0 MB",
+    val visible: Boolean = true
+)
+
+data class PracticeItem(
+    val id: String,
+    val title: String,
+    val questionsCount: Int = 20,
+    val timeMinutes: Int = 15,
+    val marks: Int = 40,
+    val visible: Boolean = true
 )
 
 data class BannerItem(

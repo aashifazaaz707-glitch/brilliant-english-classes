@@ -12,7 +12,7 @@ export function renderAdminPanel(containerElement, onSwitchToApp, onSwitchToSpli
         <!-- Sidebar -->
         <aside class="admin-sidebar">
           <div class="admin-brand-header">
-            <div class="admin-logo-circle">B</div>
+            <div class="admin-logo-circle">${(store.settings.coachingName || 'S').charAt(0)}</div>
             <div>
               <div class="admin-brand-title">${store.settings.coachingName}</div>
               <div class="admin-brand-role">
@@ -30,6 +30,10 @@ export function renderAdminPanel(containerElement, onSwitchToApp, onSwitchToSpli
             <button class="admin-nav-item ${activeTab === 'courses' ? 'active' : ''}" data-tab="courses">
               <span class="admin-nav-icon">🎓</span>
               <span>Courses & Batches</span>
+            </button>
+            <button class="admin-nav-item ${activeTab === 'curriculum' ? 'active' : ''}" data-tab="curriculum">
+              <span class="admin-nav-icon">📚</span>
+              <span>Batch Curriculum</span>
             </button>
             <button class="admin-nav-item ${activeTab === 'lectures' ? 'active' : ''}" data-tab="lectures">
               <span class="admin-nav-icon">🎥</span>
@@ -113,6 +117,7 @@ function getPageTitle(tab) {
   switch (tab) {
     case 'dashboard': return 'Coaching Analytics & Dashboard';
     case 'courses': return 'Course Catalog & Batch Management';
+    case 'curriculum': return '📚 Batch Curriculum (Subject ➔ Chapter ➔ Content)';
     case 'lectures': return '🎥 Unlisted YouTube Video Lectures & Live Classes';
     case 'banners': return '16:9 Featured Launch Banners';
     case 'notes': return 'Study Material & PDF Notes Library';
@@ -127,6 +132,7 @@ function getPageSubtitle(tab) {
   switch (tab) {
     case 'dashboard': return 'Real-time performance metrics, enrollments, and revenue';
     case 'courses': return 'Create and manage courses shown in the mobile app home slider';
+    case 'curriculum': return 'Customize subjects, chapters, lectures, pdfs, and practice tests with live visibility toggles';
     case 'lectures': return 'Paste unlisted YouTube lecture links with custom anti-leak player controls';
     case 'banners': return 'Upload 16:9 YouTube thumbnail size batch launch posters';
     case 'notes': return 'Manage free & paid study handouts, formulas and test series';
@@ -141,6 +147,7 @@ function renderTabContent(tab) {
   switch (tab) {
     case 'dashboard': return renderDashboardTab();
     case 'courses': return renderCoursesTab();
+    case 'curriculum': return renderCurriculumTab();
     case 'lectures': return renderLecturesTab();
     case 'banners': return renderBannersTab();
     case 'notes': return renderNotesTab();
@@ -363,6 +370,224 @@ function renderCoursesTab() {
             `).join('')}
           </tbody>
         </table>
+      </div>
+    </div>
+  `;
+}
+
+// 2.1 Batch Curriculum (Subjects -> Chapters -> Content) Tab
+let selectedCurriculumCourseId = null;
+
+function renderCurriculumTab() {
+  if (!selectedCurriculumCourseId && store.courses.length > 0) {
+    selectedCurriculumCourseId = store.courses[0].id;
+  }
+  const course = store.courses.find(c => c.id === selectedCurriculumCourseId) || store.courses[0];
+  const subjects = course?.subjects || [];
+
+  return `
+    <div class="admin-card" style="margin-bottom: 20px;">
+      <div class="admin-card-header" style="flex-wrap: wrap; gap: 12px;">
+        <div style="flex: 1; min-width: 260px;">
+          <h2 class="admin-card-title">📚 Batch Curriculum Manager</h2>
+          <p style="font-size:12px; color:#94a3b8; margin-top:3px;">
+            Configure Subjects, Chapters, and Resources (Lectures, PDFs, Practice). Use the green toggle switches to show or hide any item from students in real-time.
+          </p>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <label style="font-size:12.5px; font-weight:700; color:#cbd5e1;">Select Batch:</label>
+          <select id="curriculum-course-select" class="form-select" style="width: auto; min-width: 240px; background:#0f172a; color:#fff; border-color:#334155;">
+            ${store.courses.map(c => `
+              <option value="${c.id}" ${course && c.id === course.id ? 'selected' : ''}>${c.title}</option>
+            `).join('')}
+          </select>
+          ${course ? `
+            <button class="admin-btn-primary" id="btn-add-subject-modal" data-course-id="${course.id}">
+              <span>+</span>
+              <span>Add Subject</span>
+            </button>
+          ` : ''}
+        </div>
+      </div>
+
+      <div style="padding: 16px 20px 20px;">
+        ${!course ? `
+          <div style="text-align:center; padding: 40px; color:#94a3b8;">
+            No batches created yet. Please create a course first in Courses & Batches tab.
+          </div>
+        ` : subjects.length === 0 ? `
+          <div style="text-align:center; padding: 40px; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.1); border-radius:12px; color:#94a3b8;">
+            <div style="font-size:32px; margin-bottom:8px;">📚</div>
+            <div style="font-size:14px; font-weight:700; color:#fff; margin-bottom:4px;">No Subjects Added to this Batch Yet</div>
+            <div style="font-size:12px; margin-bottom:14px;">Add a subject (e.g. Spoken English, Grammar, Vocabulary) to begin structuring chapters.</div>
+            <button class="admin-btn-primary" id="btn-add-subject-empty" data-course-id="${course.id}">+ Add First Subject</button>
+          </div>
+        ` : `
+          <div class="curriculum-tree-wrap">
+            ${subjects.map((sub, sIdx) => `
+              <div class="curriculum-subject-card">
+                <div class="curriculum-subject-header">
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:22px;">${sub.icon || '📖'}</span>
+                    <div>
+                      <div style="font-size:15px; font-weight:800; color:#fff;">
+                        ${sub.name}
+                        ${sub.visible === false ? '<span style="font-size:10px; color:#f87171; background:rgba(239,68,68,0.2); padding:2px 6px; border-radius:4px; margin-left:6px;">HIDDEN FROM STUDENTS</span>' : ''}
+                      </div>
+                      <div style="font-size:11.5px; color:#94a3b8; margin-top:2px;">
+                        ${(sub.chapters || []).length} Chapters inside this Subject
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:6px;">
+                      <span style="font-size:11px; color:#cbd5e1; font-weight:600;">Show in App:</span>
+                      <label class="admin-switch" title="Toggle subject visibility in student app">
+                        <input type="checkbox" class="curriculum-toggle-subject" data-course-id="${course.id}" data-subject-id="${sub.id}" ${sub.visible !== false ? 'checked' : ''} />
+                        <span class="admin-slider"></span>
+                      </label>
+                    </div>
+
+                    <button class="admin-btn-secondary" data-action="add-chapter-modal" data-course-id="${course.id}" data-subject-id="${sub.id}" style="padding:5px 10px; font-size:11.5px;">
+                      + Add Chapter
+                    </button>
+                    <button class="admin-btn-danger" data-action="delete-subject" data-course-id="${course.id}" data-subject-id="${sub.id}" style="padding:5px 9px; font-size:11.5px;" title="Delete Subject">
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+
+                <div class="curriculum-chapters-list">
+                  ${(sub.chapters || []).length === 0 ? `
+                    <div style="padding:14px; text-align:center; color:#64748b; font-size:12px; background:rgba(255,255,255,0.01); border-radius:8px;">
+                      No chapters in this subject yet. Click "+ Add Chapter" above.
+                    </div>
+                  ` : (sub.chapters || []).map((ch, cIdx) => `
+                    <div class="curriculum-chapter-box">
+                      <div class="curriculum-chapter-header">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                          <span style="color:#60a5fa; font-weight:800; font-size:13px;">#${cIdx + 1}</span>
+                          <div>
+                            <span style="font-size:13.5px; font-weight:700; color:#f1f5f9;">${ch.title}</span>
+                            ${ch.visible === false ? '<span style="font-size:9.5px; color:#f87171; background:rgba(239,68,68,0.2); padding:1px 5px; border-radius:4px; margin-left:6px;">HIDDEN</span>' : ''}
+                          </div>
+                        </div>
+
+                        <div style="display:flex; align-items:center; gap:10px;">
+                          <div style="display:flex; align-items:center; gap:5px;">
+                            <span style="font-size:10.5px; color:#94a3b8;">Visible:</span>
+                            <label class="admin-switch" title="Toggle chapter visibility in student app">
+                              <input type="checkbox" class="curriculum-toggle-chapter" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" ${ch.visible !== false ? 'checked' : ''} />
+                              <span class="admin-slider"></span>
+                            </label>
+                          </div>
+                          <button class="admin-btn-danger" data-action="delete-chapter" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" style="padding:4px 8px; font-size:11px;" title="Delete Chapter">
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="curriculum-chapter-body">
+                        <!-- 1. Lectures Section -->
+                        <div class="curriculum-resource-group">
+                          <div class="curriculum-resource-header">
+                            <span style="color:#60a5fa;">🎥 Video Lectures (${(ch.lectures || []).length})</span>
+                            <button class="admin-btn-secondary" data-action="add-lecture-res-modal" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" style="padding:3px 8px; font-size:10.5px;">
+                              + Add Lecture
+                            </button>
+                          </div>
+                          ${(ch.lectures || []).length === 0 ? `
+                            <div style="font-size:11px; color:#64748b; padding:4px 0;">No lectures added yet.</div>
+                          ` : (ch.lectures || []).map(lec => `
+                            <div class="curriculum-item-admin-row">
+                              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                <span style="color:#ef4444; font-size:13px;">▶</span>
+                                <div style="font-size:12px; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                  ${lec.title}
+                                  <span style="font-size:10.5px; color:#94a3b8; margin-left:4px;">(${lec.duration || '25:00'})</span>
+                                </div>
+                              </div>
+                              <div style="display:flex; align-items:center; gap:8px;">
+                                <label class="admin-switch" title="Toggle visibility in student app">
+                                  <input type="checkbox" class="curriculum-toggle-resource" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" data-type="lectures" data-res-id="${lec.id}" ${lec.visible !== false ? 'checked' : ''} />
+                                  <span class="admin-slider"></span>
+                                </label>
+                                <button class="admin-btn-danger" data-action="delete-resource" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" data-type="lectures" data-res-id="${lec.id}" style="padding:2px 6px; font-size:10px;">✕</button>
+                              </div>
+                            </div>
+                          `).join('')}
+                        </div>
+
+                        <!-- 2. PDF Notes Section -->
+                        <div class="curriculum-resource-group">
+                          <div class="curriculum-resource-header">
+                            <span style="color:#f59e0b;">📑 PDF Notes & Handouts (${(ch.pdfs || []).length})</span>
+                            <button class="admin-btn-secondary" data-action="add-pdf-res-modal" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" style="padding:3px 8px; font-size:10.5px;">
+                              + Add PDF
+                            </button>
+                          </div>
+                          ${(ch.pdfs || []).length === 0 ? `
+                            <div style="font-size:11px; color:#64748b; padding:4px 0;">No PDFs added yet.</div>
+                          ` : (ch.pdfs || []).map(pdf => `
+                            <div class="curriculum-item-admin-row">
+                              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                <span style="color:#f59e0b; font-size:13px;">📄</span>
+                                <div style="font-size:12px; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                  ${pdf.title}
+                                  <span style="font-size:10.5px; color:#94a3b8; margin-left:4px;">(${pdf.pages || '12 Pages'} • ${pdf.size || '2 MB'})</span>
+                                </div>
+                              </div>
+                              <div style="display:flex; align-items:center; gap:8px;">
+                                <label class="admin-switch" title="Toggle visibility in student app">
+                                  <input type="checkbox" class="curriculum-toggle-resource" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" data-type="pdfs" data-res-id="${pdf.id}" ${pdf.visible !== false ? 'checked' : ''} />
+                                  <span class="admin-slider"></span>
+                                </label>
+                                <button class="admin-btn-danger" data-action="delete-resource" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" data-type="pdfs" data-res-id="${pdf.id}" style="padding:2px 6px; font-size:10px;">✕</button>
+                              </div>
+                            </div>
+                          `).join('')}
+                        </div>
+
+                        <!-- 3. Practice Tests Section -->
+                        <div class="curriculum-resource-group">
+                          <div class="curriculum-resource-header">
+                            <span style="color:#10b981;">📝 Practice Tests & Quizzes (${(ch.practices || []).length})</span>
+                            <button class="admin-btn-secondary" data-action="add-practice-res-modal" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" style="padding:3px 8px; font-size:10.5px;">
+                              + Add Practice
+                            </button>
+                          </div>
+                          ${(ch.practices || []).length === 0 ? `
+                            <div style="font-size:11px; color:#64748b; padding:4px 0;">No practice tests added yet.</div>
+                          ` : (ch.practices || []).map(pr => `
+                            <div class="curriculum-item-admin-row">
+                              <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+                                <span style="color:#10b981; font-size:13px;">✍️</span>
+                                <div style="font-size:12px; color:#e2e8f0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                                  ${pr.title}
+                                  <span style="font-size:10.5px; color:#94a3b8; margin-left:4px;">(${pr.questionsCount || 20} Qs • ${pr.timeMinutes || 15} min • ${pr.marks || 40} Marks)</span>
+                                </div>
+                              </div>
+                              <div style="display:flex; align-items:center; gap:8px;">
+                                <label class="admin-switch" title="Toggle visibility in student app">
+                                  <input type="checkbox" class="curriculum-toggle-resource" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" data-type="practices" data-res-id="${pr.id}" ${pr.visible !== false ? 'checked' : ''} />
+                                  <span class="admin-slider"></span>
+                                </label>
+                                <button class="admin-btn-danger" data-action="delete-resource" data-course-id="${course.id}" data-subject-id="${sub.id}" data-chapter-id="${ch.id}" data-type="practices" data-res-id="${pr.id}" style="padding:2px 6px; font-size:10px;">✕</button>
+                              </div>
+                            </div>
+                          `).join('')}
+                        </div>
+
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
       </div>
     </div>
   `;
@@ -733,6 +958,22 @@ function renderSettingsTab() {
 
         <div class="form-row">
           <div class="form-group">
+            <label class="form-label">Lead Teacher / Legal Name</label>
+            <input type="text" id="set-teacher" class="form-input" value="${s.teacherName || s.legalName || 'Krishna Kumar'}" placeholder="Krishna Kumar" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Official Support Email</label>
+            <input type="email" id="set-email" class="form-input" value="${s.email || 'support@smartstudyenglishclasses.com'}" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Institute Registered Address / Legal Location</label>
+          <textarea id="set-address" class="form-textarea" rows="2" placeholder="Institute physical address" required>${s.address || 'NEAR BUS STAND INFRONT OF BANK OF BRODA, 1ST FLOOR, MADHEPUR, MADHUBANI , BIHAR'}</textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
             <label class="form-label">WhatsApp Helpline (with Country Code)</label>
             <input type="text" id="set-whatsapp" class="form-input" value="${s.whatsapp}" placeholder="919876543210" required />
           </div>
@@ -886,13 +1127,17 @@ function attachAdminEvents(containerElement, onSwitchToApp, onSwitchToSplit, upd
       store.updateSettings({
         coachingName: containerElement.querySelector('#set-name').value.trim(),
         tagline: containerElement.querySelector('#set-tagline').value.trim(),
+        teacherName: containerElement.querySelector('#set-teacher').value.trim(),
+        legalName: containerElement.querySelector('#set-teacher').value.trim(),
+        address: containerElement.querySelector('#set-address').value.trim(),
+        email: containerElement.querySelector('#set-email').value.trim(),
         whatsapp: containerElement.querySelector('#set-whatsapp').value.trim(),
         phone: containerElement.querySelector('#set-phone').value.trim(),
         youtubeUrl: containerElement.querySelector('#set-youtube').value.trim(),
         instagramUrl: containerElement.querySelector('#set-instagram').value.trim(),
         facebookUrl: containerElement.querySelector('#set-facebook').value.trim()
       });
-      alert('Coaching configuration updated successfully!');
+      alert('Smart Study English Classes configuration updated successfully!');
     });
 
     const btnReset = containerElement.querySelector('#btn-reset-data');
@@ -953,9 +1198,137 @@ function attachAdminEvents(containerElement, onSwitchToApp, onSwitchToSplit, upd
   const btnExport = containerElement.querySelector('#btn-export-students');
   if (btnExport) {
     btnExport.addEventListener('click', () => {
-      alert('Exported students record to brilliant_english_students.csv');
+      alert('Exported students record to smart_study_students.csv');
     });
   }
+
+  // ==========================================
+  // BATCH CURRICULUM EVENT HANDLERS
+  // ==========================================
+  const courseSelect = containerElement.querySelector('#curriculum-course-select');
+  if (courseSelect) {
+    courseSelect.addEventListener('change', (e) => {
+      selectedCurriculumCourseId = e.target.value;
+      update();
+    });
+  }
+
+  // Add Subject button
+  const btnAddSub = containerElement.querySelector('#btn-add-subject-modal') || containerElement.querySelector('#btn-add-subject-empty');
+  if (btnAddSub) {
+    btnAddSub.addEventListener('click', () => {
+      const courseId = btnAddSub.getAttribute('data-course-id');
+      openAddSubjectModal(courseId);
+    });
+  }
+
+  // Subject visibility toggle
+  containerElement.querySelectorAll('.curriculum-toggle-subject').forEach(toggle => {
+    toggle.addEventListener('change', () => {
+      const courseId = toggle.getAttribute('data-course-id');
+      const subjectId = toggle.getAttribute('data-subject-id');
+      store.toggleSubjectVisibility(courseId, subjectId);
+    });
+  });
+
+  // Delete subject
+  containerElement.querySelectorAll('[data-action="delete-subject"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const courseId = btn.getAttribute('data-course-id');
+      const subjectId = btn.getAttribute('data-subject-id');
+      if (confirm('Delete this Subject and all its Chapters & Content?')) {
+        store.deleteSubject(courseId, subjectId);
+        update();
+      }
+    });
+  });
+
+  // Add chapter button
+  containerElement.querySelectorAll('[data-action="add-chapter-modal"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const courseId = btn.getAttribute('data-course-id');
+      const subjectId = btn.getAttribute('data-subject-id');
+      openAddChapterModal(courseId, subjectId);
+    });
+  });
+
+  // Chapter visibility toggle
+  containerElement.querySelectorAll('.curriculum-toggle-chapter').forEach(toggle => {
+    toggle.addEventListener('change', () => {
+      const courseId = toggle.getAttribute('data-course-id');
+      const subjectId = toggle.getAttribute('data-subject-id');
+      const chapterId = toggle.getAttribute('data-chapter-id');
+      store.toggleChapterVisibility(courseId, subjectId, chapterId);
+    });
+  });
+
+  // Delete chapter
+  containerElement.querySelectorAll('[data-action="delete-chapter"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const courseId = btn.getAttribute('data-course-id');
+      const subjectId = btn.getAttribute('data-subject-id');
+      const chapterId = btn.getAttribute('data-chapter-id');
+      if (confirm('Delete this Chapter and all its resources?')) {
+        store.deleteChapter(courseId, subjectId, chapterId);
+        update();
+      }
+    });
+  });
+
+  // Add resource modals (lectures, pdfs, practices)
+  containerElement.querySelectorAll('[data-action="add-lecture-res-modal"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const courseId = btn.getAttribute('data-course-id');
+      const subjectId = btn.getAttribute('data-subject-id');
+      const chapterId = btn.getAttribute('data-chapter-id');
+      openAddResourceModal(courseId, subjectId, chapterId, 'lectures');
+    });
+  });
+
+  containerElement.querySelectorAll('[data-action="add-pdf-res-modal"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const courseId = btn.getAttribute('data-course-id');
+      const subjectId = btn.getAttribute('data-subject-id');
+      const chapterId = btn.getAttribute('data-chapter-id');
+      openAddResourceModal(courseId, subjectId, chapterId, 'pdfs');
+    });
+  });
+
+  containerElement.querySelectorAll('[data-action="add-practice-res-modal"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const courseId = btn.getAttribute('data-course-id');
+      const subjectId = btn.getAttribute('data-subject-id');
+      const chapterId = btn.getAttribute('data-chapter-id');
+      openAddResourceModal(courseId, subjectId, chapterId, 'practices');
+    });
+  });
+
+  // Resource visibility toggle
+  containerElement.querySelectorAll('.curriculum-toggle-resource').forEach(toggle => {
+    toggle.addEventListener('change', () => {
+      const courseId = toggle.getAttribute('data-course-id');
+      const subjectId = toggle.getAttribute('data-subject-id');
+      const chapterId = toggle.getAttribute('data-chapter-id');
+      const type = toggle.getAttribute('data-type');
+      const resId = toggle.getAttribute('data-res-id');
+      store.toggleResourceVisibility(courseId, subjectId, chapterId, type, resId);
+    });
+  });
+
+  // Delete resource
+  containerElement.querySelectorAll('[data-action="delete-resource"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const courseId = btn.getAttribute('data-course-id');
+      const subjectId = btn.getAttribute('data-subject-id');
+      const chapterId = btn.getAttribute('data-chapter-id');
+      const type = btn.getAttribute('data-type');
+      const resId = btn.getAttribute('data-res-id');
+      if (confirm('Delete this item from the chapter?')) {
+        store.deleteResource(courseId, subjectId, chapterId, type, resId);
+        update();
+      }
+    });
+  });
 }
 
 // Modal: Test Secure Video Player
@@ -1280,6 +1653,201 @@ function openNoteModal() {
       price: parseInt(document.getElementById('n-price').value) || 0,
       size: document.getElementById('n-size').value.trim()
     });
+    close();
+  });
+}
+
+// Modal: Add Subject to Batch
+function openAddSubjectModal(courseId) {
+  const root = document.getElementById('admin-modals-root');
+  root.innerHTML = `
+    <div class="admin-modal-backdrop open">
+      <div class="admin-modal-box">
+        <div class="admin-modal-header">
+          <h3 class="admin-modal-title">Add Subject to Batch</h3>
+          <button class="admin-modal-close" id="btn-close-sub">✕</button>
+        </div>
+        <form id="form-add-subject">
+          <div class="admin-modal-body">
+            <div class="form-group">
+              <label class="form-label">Subject Name</label>
+              <input type="text" id="sub-name" class="form-input" placeholder="e.g. Spoken English & Fluency" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subject Icon / Emoji</label>
+              <select id="sub-icon" class="form-select">
+                <option value="🗣️">🗣️ Spoken English</option>
+                <option value="📖">📖 Grammar Rules</option>
+                <option value="💡">💡 Vocabulary</option>
+                <option value="🎯">🎯 Competitive Exams</option>
+                <option value="✍️">✍️ Essay & Letter Writing</option>
+                <option value="🧠">🧠 Memory Techniques</option>
+                <option value="🏆">🏆 Mock Test Series</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn-secondary" id="btn-cancel-sub">Cancel</button>
+            <button type="submit" class="admin-btn-primary">Add Subject</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  const close = () => { root.innerHTML = ''; };
+  document.getElementById('btn-close-sub').addEventListener('click', close);
+  document.getElementById('btn-cancel-sub').addEventListener('click', close);
+
+  document.getElementById('form-add-subject').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('sub-name').value.trim();
+    const icon = document.getElementById('sub-icon').value;
+    if (name) {
+      store.addSubject(courseId, name, icon);
+      close();
+    }
+  });
+}
+
+// Modal: Add Chapter to Subject
+function openAddChapterModal(courseId, subjectId) {
+  const root = document.getElementById('admin-modals-root');
+  root.innerHTML = `
+    <div class="admin-modal-backdrop open">
+      <div class="admin-modal-box">
+        <div class="admin-modal-header">
+          <h3 class="admin-modal-title">Add Chapter</h3>
+          <button class="admin-modal-close" id="btn-close-ch">✕</button>
+        </div>
+        <form id="form-add-chapter">
+          <div class="admin-modal-body">
+            <div class="form-group">
+              <label class="form-label">Chapter Title</label>
+              <input type="text" id="ch-title" class="form-input" placeholder="e.g. Chapter 03: Tenses & Time Mapping" required />
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn-secondary" id="btn-cancel-ch">Cancel</button>
+            <button type="submit" class="admin-btn-primary">Create Chapter</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  const close = () => { root.innerHTML = ''; };
+  document.getElementById('btn-close-ch').addEventListener('click', close);
+  document.getElementById('btn-cancel-ch').addEventListener('click', close);
+
+  document.getElementById('form-add-chapter').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = document.getElementById('ch-title').value.trim();
+    if (title) {
+      store.addChapter(courseId, subjectId, title);
+      close();
+    }
+  });
+}
+
+// Modal: Add Resource (Lecture, PDF, Practice)
+function openAddResourceModal(courseId, subjectId, chapterId, resourceType) {
+  const root = document.getElementById('admin-modals-root');
+  let typeTitle = 'Lecture Video';
+  if (resourceType === 'pdfs') typeTitle = 'PDF Note';
+  if (resourceType === 'practices') typeTitle = 'Practice Test';
+
+  root.innerHTML = `
+    <div class="admin-modal-backdrop open">
+      <div class="admin-modal-box">
+        <div class="admin-modal-header">
+          <h3 class="admin-modal-title">Add ${typeTitle} to Chapter</h3>
+          <button class="admin-modal-close" id="btn-close-res">✕</button>
+        </div>
+        <form id="form-add-resource">
+          <div class="admin-modal-body">
+            <div class="form-group">
+              <label class="form-label">Item Title</label>
+              <input type="text" id="res-title" class="form-input" placeholder="e.g. ${resourceType === 'lectures' ? 'Daily Spoken English Routine Practice' : resourceType === 'pdfs' ? 'Tenses Master Formula Chart' : 'Speed Quiz 01 - Tenses Error Spotting'}" required />
+            </div>
+
+            ${resourceType === 'lectures' ? `
+              <div class="form-group">
+                <label class="form-label">YouTube Video URL or Video ID</label>
+                <input type="text" id="res-video-url" class="form-input" placeholder="e.g. https://youtu.be/wdaBwIv7Jso or wdaBwIv7Jso" value="wdaBwIv7Jso" required />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Duration</label>
+                  <input type="text" id="res-duration" class="form-input" value="32:45" required />
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:8px; padding-top:28px;">
+                  <input type="checkbox" id="res-is-free" checked />
+                  <label for="res-is-free" style="font-size:12px; color:#cbd5e1; cursor:pointer;">Free Preview</label>
+                </div>
+              </div>
+            ` : resourceType === 'pdfs' ? `
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Page Count</label>
+                  <input type="text" id="res-pages" class="form-input" value="18 Pages" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">File Size</label>
+                  <input type="text" id="res-size" class="form-input" value="2.8 MB" required />
+                </div>
+              </div>
+            ` : `
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">Question Count</label>
+                  <input type="number" id="res-questions" class="form-input" value="20" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Time Limit (Minutes)</label>
+                  <input type="number" id="res-time" class="form-input" value="15" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Total Marks</label>
+                  <input type="number" id="res-marks" class="form-input" value="40" required />
+                </div>
+              </div>
+            `}
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn-secondary" id="btn-cancel-res">Cancel</button>
+            <button type="submit" class="admin-btn-primary">Add ${typeTitle}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  const close = () => { root.innerHTML = ''; };
+  document.getElementById('btn-close-res').addEventListener('click', close);
+  document.getElementById('btn-cancel-res').addEventListener('click', close);
+
+  document.getElementById('form-add-resource').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const title = document.getElementById('res-title').value.trim();
+    if (!title) return;
+
+    let resData = { title };
+    if (resourceType === 'lectures') {
+      const rawUrl = document.getElementById('res-video-url').value.trim();
+      resData.videoId = extractYouTubeId(rawUrl) || 'wdaBwIv7Jso';
+      resData.duration = document.getElementById('res-duration').value.trim() || '25:00';
+      resData.isFree = document.getElementById('res-is-free').checked;
+    } else if (resourceType === 'pdfs') {
+      resData.pages = document.getElementById('res-pages').value.trim() || '10 Pages';
+      resData.size = document.getElementById('res-size').value.trim() || '2.0 MB';
+    } else if (resourceType === 'practices') {
+      resData.questionsCount = parseInt(document.getElementById('res-questions').value) || 20;
+      resData.timeMinutes = parseInt(document.getElementById('res-time').value) || 15;
+      resData.marks = parseInt(document.getElementById('res-marks').value) || 40;
+    }
+
+    store.addResource(courseId, subjectId, chapterId, resourceType, resData);
     close();
   });
 }

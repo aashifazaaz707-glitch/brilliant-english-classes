@@ -42,9 +42,9 @@ object MockData {
         QuickActionItem("qa_6", "Paid Notes", QuickActionType.PAID_NOTES),
         QuickActionItem("qa_7", "Free Notes", QuickActionType.FREE_NOTES),
         QuickActionItem("qa_8", "Free Videos", QuickActionType.FREE_VIDEOS),
-        QuickActionItem("qa_9", "YouTube", QuickActionType.YOUTUBE, externalUrl = "https://youtube.com/@brilliantenglishclasses"),
-        QuickActionItem("qa_10", "Instagram", QuickActionType.INSTAGRAM, externalUrl = "https://instagram.com/brilliantenglishclasses"),
-        QuickActionItem("qa_11", "Facebook", QuickActionType.FACEBOOK, externalUrl = "https://facebook.com/brilliantenglishclasses"),
+        QuickActionItem("qa_9", "YouTube", QuickActionType.YOUTUBE, externalUrl = "https://youtube.com/@smartstudyenglishclasses"),
+        QuickActionItem("qa_10", "Instagram", QuickActionType.INSTAGRAM, externalUrl = "https://instagram.com/smartstudyenglishclasses"),
+        QuickActionItem("qa_11", "Facebook", QuickActionType.FACEBOOK, externalUrl = "https://facebook.com/smartstudyenglishclasses"),
         QuickActionItem("qa_12", "WhatsApp", QuickActionType.WHATSAPP, externalUrl = "https://wa.me/919876543210"),
         QuickActionItem("qa_13", "Share App", QuickActionType.SHARE_APP)
     )
@@ -60,7 +60,7 @@ object MockData {
             rating = 4.9,
             studentCount = "8,400+ Enrolled",
             batchDate = "Starts 25th Oct 2026",
-            faculty = "Prof. Arvind Kumar & Team",
+            faculty = "Krishna Kumar & Expert Team",
             category = "Spoken English",
             features = listOf(
                 "Daily 1-on-1 Practice Groups",
@@ -68,6 +68,48 @@ object MockData {
                 "Corporate & Interview English",
                 "Lifetime PDF Study Materials",
                 "Weekly Speaking Assessments"
+            ),
+            subjects = listOf(
+                com.brilliant.englishclasses.model.Subject(
+                    id = "sub_spk_1",
+                    name = "Spoken English & Fluency",
+                    icon = "🗣️",
+                    chapters = listOf(
+                        com.brilliant.englishclasses.model.Chapter(
+                            id = "ch_spk_1",
+                            title = "Chapter 01: 500 Daily Spoken English Sentences",
+                            lectures = listOf(
+                                com.brilliant.englishclasses.model.LectureItem(id = "lec_1", title = "Day 01: Greeting & Self Introduction", videoId = "wdaBwIv7Jso", duration = "28:15")
+                            ),
+                            pdfs = listOf(
+                                com.brilliant.englishclasses.model.PdfItem(id = "pdf_1", title = "500 Daily Sentences Printable PDF", pages = "18 Pages", size = "2.4 MB")
+                            ),
+                            practices = listOf(
+                                com.brilliant.englishclasses.model.PracticeItem(id = "pr_1", title = "Daily Spoken English Quiz 01", questionsCount = 15, timeMinutes = 10, marks = 30)
+                            )
+                        )
+                    )
+                ),
+                com.brilliant.englishclasses.model.Subject(
+                    id = "sub_spk_2",
+                    name = "Grammar Fundamentals",
+                    icon = "📖",
+                    chapters = listOf(
+                        com.brilliant.englishclasses.model.Chapter(
+                            id = "ch_spk_2",
+                            title = "Chapter 01: Tenses & Time Mapping",
+                            lectures = listOf(
+                                com.brilliant.englishclasses.model.LectureItem(id = "lec_2", title = "Mastering Present & Past Tenses", videoId = "wdaBwIv7Jso", duration = "35:10")
+                            ),
+                            pdfs = listOf(
+                                com.brilliant.englishclasses.model.PdfItem(id = "pdf_2", title = "Tenses Formula Sheet PDF", pages = "12 Pages", size = "1.8 MB")
+                            ),
+                            practices = listOf(
+                                com.brilliant.englishclasses.model.PracticeItem(id = "pr_2", title = "Tenses Speed Test (20 Qs)", questionsCount = 20, timeMinutes = 15, marks = 40)
+                            )
+                        )
+                    )
+                )
             )
         ),
         Course(
@@ -80,7 +122,7 @@ object MockData {
             rating = 4.95,
             studentCount = "12,200+ Enrolled",
             batchDate = "Starts 20th Oct 2026",
-            faculty = "Prof. R. K. Sharma (Ex-Examiner)",
+            faculty = "Krishna Kumar (Lead Instructor)",
             category = "Competitive Exams",
             features = listOf(
                 "3000+ Previous Year Question (PYQs) Solved",
@@ -88,6 +130,28 @@ object MockData {
                 "Advanced Grammar Rules with Tricks",
                 "50 Full-Length Exam Mock Tests",
                 "Special Vocab Booster with Mnemonics"
+            ),
+            subjects = listOf(
+                com.brilliant.englishclasses.model.Subject(
+                    id = "sub_ssc_1",
+                    name = "Objective English Grammar",
+                    icon = "🎯",
+                    chapters = listOf(
+                        com.brilliant.englishclasses.model.Chapter(
+                            id = "ch_ssc_1",
+                            title = "Chapter 01: 100 Golden Rules of Grammar",
+                            lectures = listOf(
+                                com.brilliant.englishclasses.model.LectureItem(id = "lec_ssc_1", title = "Golden Rules 1-25: Subject-Verb Agreement", videoId = "wdaBwIv7Jso", duration = "42:15")
+                            ),
+                            pdfs = listOf(
+                                com.brilliant.englishclasses.model.PdfItem(id = "pdf_ssc_1", title = "100 Golden Grammar Rules Comprehensive Handout", pages = "36 Pages", size = "4.5 MB")
+                            ),
+                            practices = listOf(
+                                com.brilliant.englishclasses.model.PracticeItem(id = "pr_ssc_1", title = "Error Spotting Mock Test (SSC Pattern)", questionsCount = 25, timeMinutes = 20, marks = 50)
+                            )
+                        )
+                    )
+                )
             )
         ),
         Course(
@@ -100,7 +164,7 @@ object MockData {
             rating = 4.88,
             studentCount = "6,150+ Enrolled",
             batchDate = "Instant Access / Self-Paced",
-            faculty = "Dr. Neha Verma (Ph.D. English)",
+            faculty = "Krishna Kumar & Team",
             category = "Grammar & Writing",
             features = listOf(
                 "All 8 Parts of Speech in Detail",

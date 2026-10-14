@@ -15,6 +15,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.brilliant.englishclasses.ui.screens.CourseDetailScreen
 import com.brilliant.englishclasses.ui.screens.HomeScreen
+import com.brilliant.englishclasses.ui.screens.MyBatchesScreen
+import com.brilliant.englishclasses.ui.screens.ProfileScreen
 import com.brilliant.englishclasses.ui.theme.BrilliantEnglishClassesTheme
 
 class MainActivity : ComponentActivity() {
@@ -51,9 +53,54 @@ fun AppNavigation() {
                 },
                 onSearchClick = {
                     // Search action
+                },
+                onTabSelected = { route ->
+                    if (route != "home") {
+                        navController.navigate(route) {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 }
             )
         }
+
+        composable("my_batches") {
+            MyBatchesScreen(
+                onCourseClick = { courseId ->
+                    navController.navigate("course_detail/$courseId")
+                },
+                onTabSelected = { route ->
+                    if (route == "home") {
+                        navController.popBackStack("home", inclusive = false)
+                    } else if (route != "my_batches") {
+                        navController.navigate(route) {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+            )
+        }
+
+        composable("profile") {
+            ProfileScreen(
+                onTabSelected = { route ->
+                    if (route == "home") {
+                        navController.popBackStack("home", inclusive = false)
+                    } else if (route != "profile") {
+                        navController.navigate(route) {
+                            popUpTo("home") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                }
+            )
+        }
+
         composable(
             route = "course_detail/{courseId}",
             arguments = listOf(navArgument("courseId") { type = NavType.StringType })

@@ -1,7 +1,7 @@
 {
-  "clientId": "brilliant_english",
-  "clientName": "Brilliant English Classes",
-  "shortName": "Brilliant",
+  "clientId": "smart_study_english",
+  "clientName": "Smart Study English Classes",
+  "shortName": "Smart Study",
   "tagline": "Learn • Practice • Master",
   "category": "English & Spoken Mastery",
   "appId": "com.brilliant.englishclasses",
@@ -17,14 +17,17 @@
     "backgroundColor": "#F8FAFC"
   },
   "contact": {
+    "teacherName": "Krishna Kumar",
+    "legalName": "Krishna Kumar",
+    "address": "NEAR BUS STAND INFRONT OF BANK OF BRODA, 1ST FLOOR, MADHEPUR, MADHUBANI , BIHAR",
     "phone": "+91 98765 43210",
     "whatsapp": "919876543210",
-    "email": "support@brilliantenglishclasses.com",
-    "website": "https://brilliantenglishclasses.com",
-    "youtubeUrl": "https://youtube.com/@brilliantenglishclasses",
-    "instagramUrl": "https://instagram.com/brilliantenglishclasses",
-    "facebookUrl": "https://facebook.com/brilliantenglishclasses",
-    "telegramUrl": "https://t.me/brilliantenglishclasses"
+    "email": "support@smartstudyenglishclasses.com",
+    "website": "https://smartstudyenglishclasses.com",
+    "youtubeUrl": "https://youtube.com/@smartstudyenglishclasses",
+    "instagramUrl": "https://instagram.com/smartstudyenglishclasses",
+    "facebookUrl": "https://facebook.com/smartstudyenglishclasses",
+    "telegramUrl": "https://t.me/smartstudyenglishclasses"
   },
   "features": {
     "enableLiveClasses": true,

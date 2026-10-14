@@ -909,3 +909,1050 @@ body {
   cursor: pointer;
   font-weight: bold;
 }
+
+/* ========================================================
+   STUDENT APP: MY BATCHES & PROFILE SCREEN STYLES
+   ======================================================== */
+
+.subpage-header {
+  background: var(--header-gradient);
+  padding: 16px 20px 22px;
+  color: #ffffff;
+  border-bottom-left-radius: 24px;
+  border-bottom-right-radius: 24px;
+  box-shadow: 0 8px 24px rgba(8, 29, 88, 0.25);
+}
+
+.subpage-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.subpage-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.subpage-subtitle {
+  font-size: 12px;
+  opacity: 0.85;
+  color: #e0e7ff;
+}
+
+.batch-filter-pills {
+  display: flex;
+  gap: 8px;
+  margin: 14px 16px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.batch-filter-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.batch-pill-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.batch-pill-btn.active {
+  background: var(--primary-blue);
+  color: #ffffff;
+  border-color: var(--primary-blue);
+  box-shadow: 0 4px 12px rgba(19, 64, 181, 0.25);
+}
+
+/* Enrolled Batch Card */
+.enrolled-batch-card {
+  background: #ffffff;
+  border-radius: 18px;
+  margin: 0 16px 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+  border: 1px solid #e2e8f0;
+  transition: transform 0.2s ease;
+}
+
+.enrolled-batch-banner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #0f172a;
+}
+
+.enrolled-batch-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.enrolled-batch-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.batch-progress-wrapper {
+  background: #f1f5f9;
+  border-radius: 8px;
+  height: 7px;
+  overflow: hidden;
+  position: relative;
+}
+
+.batch-progress-fill {
+  background: linear-gradient(90deg, #1340b5, #10b981);
+  height: 100%;
+  border-radius: 8px;
+  transition: width 0.4s ease;
+}
+
+.batch-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.batch-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.batch-action-btn.primary {
+  background: linear-gradient(135deg, #1340b5, #081d58);
+  color: #ffffff;
+  grid-column: span 2;
+  box-shadow: 0 4px 14px rgba(19, 64, 181, 0.3);
+}
+
+.batch-action-btn.secondary {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.batch-action-btn.secondary:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Timeline schedule */
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  position: relative;
+  padding-bottom: 14px;
+}
+
+.timeline-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: 11px;
+  bottom: 0;
+  width: 2px;
+  background: #e2e8f0;
+}
+
+.timeline-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #e0e7ff;
+  color: #1340b5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.timeline-dot.active {
+  background: #e11d48;
+  color: #ffffff;
+  animation: pulse-dot 1.5s infinite;
+}
+
+/* ========================================================
+   STUDENT PROFILE STYLES
+   ======================================================== */
+
+.profile-hero-card {
+  background: linear-gradient(135deg, #081d58 0%, #1340b5 80%, #2563eb 100%);
+  color: #ffffff;
+  padding: 22px 18px 26px;
+  border-bottom-left-radius: 28px;
+  border-bottom-right-radius: 28px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(8, 29, 88, 0.3);
+}
+
+.profile-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-avatar-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffb800, #f59e0b);
+  color: #081d58;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 800;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.profile-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin: -20px 16px 16px;
+  position: relative;
+  z-index: 5;
+}
+
+.stat-tile {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 12px 6px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stat-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(19, 64, 181, 0.12);
+}
+
+.stat-number {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--primary-blue);
+  line-height: 1.1;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+/* Profile Section Menu */
+.profile-section-card {
+  background: #ffffff;
+  border-radius: 18px;
+  margin: 0 16px 14px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+  border: 1px solid #e2e8f0;
+}
+
+.profile-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.profile-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 0;
+  border-bottom: 1px solid #f1f5f9;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.profile-menu-row:last-child {
+  border-bottom: none;
+}
+
+.profile-menu-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-menu-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+
+.profile-menu-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.profile-menu-desc {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.profile-menu-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Fee Receipt Modal & Digital Card */
+.fee-receipt-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  border: 2px dashed #cbd5e1;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.receipt-stamp {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border: 2px solid #10b981;
+  color: #10b981;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 11px;
+  transform: rotate(-5deg);
+  letter-spacing: 0.5px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 12.5px;
+}
+
+.receipt-row:last-child {
+  border-bottom: none;
+}
+
+.receipt-label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.receipt-value {
+  color: #0f172a;
+  font-weight: 700;
+  text-align: right;
+}
+
+/* Notes Screen Styles */
+.notes-card-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+  transition: transform 0.15s ease;
+}
+
+.notes-card-item:hover {
+  transform: translateY(-1px);
+  border-color: #cbd5e1;
+}
+
+/* ========================================================
+   AZAZLAB.COM DEVELOPER ATTRIBUTION & LEGAL CLAUSES
+   ======================================================== */
+
+.developer-attribution-badge {
+  text-align: center;
+  padding: 14px 16px 22px;
+  color: #64748b;
+}
+
+.developer-brand-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+.developer-brand-tag a {
+  color: var(--primary-blue);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.developer-disclaimer-note {
+  font-size: 10.5px;
+  color: #94a3b8;
+  line-height: 1.45;
+  margin-top: 8px;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Legal Documents Tabs & Modal */
+.legal-tabs-row {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.legal-tab-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.legal-tab-btn.active {
+  background: #ffffff;
+  color: var(--primary-blue);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+.legal-document-container {
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legal-clause-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.legal-clause-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legal-clause-text {
+  font-size: 11.5px;
+  color: #475569;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.developer-liability-highlight {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.developer-liability-highlight .legal-clause-title {
+  color: #991b1b;
+}
+
+.developer-liability-highlight .legal-clause-text {
+  color: #b91c1c;
+}
+
+/* ========================================================
+   BATCH CURRICULUM HIERARCHY STYLES
+   (Subjects -> Chapters -> Lectures, PDFs, Practices)
+   ======================================================== */
+
+.batch-curriculum-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Subject horizontal tabs */
+.subject-nav-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 10px;
+  scrollbar-width: none;
+}
+.subject-nav-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.subject-tab-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.subject-tab-pill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.subject-tab-pill.active {
+  background: var(--primary-blue);
+  color: #ffffff;
+  border-color: var(--primary-blue);
+  box-shadow: 0 4px 12px rgba(19, 64, 181, 0.25);
+}
+
+/* Chapter Accordion Card */
+.chapter-accordion-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease;
+}
+
+.chapter-accordion-card.open {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(19, 64, 181, 0.08);
+}
+
+.chapter-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  user-select: none;
+  background: #ffffff;
+}
+
+.chapter-header-row:hover {
+  background: #f8fafc;
+}
+
+.chapter-title-col {
+  flex: 1;
+}
+
+.chapter-title-text {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.chapter-counters-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.chapter-counter-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.chapter-counter-badge.lectures {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.chapter-counter-badge.pdfs {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.chapter-counter-badge.practices {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.chapter-chevron {
+  font-size: 14px;
+  color: #94a3b8;
+  transition: transform 0.25s ease;
+  margin-left: 10px;
+}
+
+.chapter-accordion-card.open .chapter-chevron {
+  transform: rotate(180deg);
+  color: var(--primary-blue);
+}
+
+/* Chapter Sub-Content Body */
+.chapter-content-body {
+  display: none;
+  border-top: 1px solid #f1f5f9;
+  background: #fcfdfe;
+  padding: 12px 14px 16px;
+}
+
+.chapter-accordion-card.open .chapter-content-body {
+  display: block;
+}
+
+/* Resource Sub-tabs (Lectures, PDFs, Practice) */
+.resource-segmented-nav {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 3px;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.resource-segment-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.resource-segment-btn.active {
+  background: #ffffff;
+  color: var(--primary-blue);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+}
+
+/* Resource Items */
+.curriculum-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  transition: all 0.15s ease;
+}
+
+.curriculum-item-row:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.curriculum-item-row:last-child {
+  margin-bottom: 0;
+}
+
+.curriculum-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.curriculum-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.curriculum-item-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.curriculum-item-meta {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.curriculum-action-btn {
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.curriculum-action-btn.play {
+  background: var(--primary-blue);
+  color: #ffffff;
+}
+
+.curriculum-action-btn.download {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+.curriculum-action-btn.practice {
+  background: #10b981;
+  color: #ffffff;
+}
+
+/* Practice Quiz Modal */
+.quiz-modal-body {
+  padding: 4px 0;
+}
+
+.quiz-question-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.quiz-option-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  transition: all 0.15s ease;
+}
+
+.quiz-option-label:hover {
+  border-color: var(--primary-blue);
+  background: #f0f4ff;
+}
+
+.quiz-option-label.selected {
+  border-color: var(--primary-blue);
+  background: #eef2ff;
+  color: var(--primary-blue);
+  font-weight: 700;
+}
+
+.quiz-result-card {
+  text-align: center;
+  padding: 20px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 16px;
+}
+
+/* ========================================================
+   FULLSCREEN BATCH SCREEN VIEW (Replaces Slide-Up Sheet)
+   ======================================================== */
+
+#course-modal.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background: #f8fafc;
+  z-index: 350;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  border-radius: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+#course-modal.modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0);
+}
+
+#course-modal .bottom-sheet {
+  width: 100%;
+  height: 100%;
+  max-height: 100% !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  transition: none !important;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.batch-fullscreen-header {
+  height: 56px;
+  background: var(--header-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+}
+
+.batch-fullscreen-back-btn {
+  background: rgba(255, 255, 255, 0.18);
+  border: none;
+  color: #ffffff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+}
+
+.batch-fullscreen-back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.batch-fullscreen-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #ffffff;
+  flex: 1;
+  margin: 0 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.batch-fullscreen-scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ========================================================
+   VERTICAL SYLLABUS & CONTENT STACK (No Horizontal Scroll)
+   ======================================================== */
+
+.vertical-subjects-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.vertical-subject-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.vertical-subject-header {
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vertical-subject-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
+}
+
+.vertical-subject-info {
+  flex: 1;
+}
+
+.vertical-subject-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.vertical-subject-subtitle {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.vertical-chapters-wrapper {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #ffffff;
+}
+
+/* Vertical Chapter Box */
+.vertical-chapter-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.vertical-chapter-header {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  background: #fcfdfe;
+}
+
+.vertical-chapter-header:hover {
+  background: #f8fafc;
+}
+
+.vertical-chapter-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.vertical-chapter-body {
+  border-top: 1px solid #f1f5f9;
+  padding: 12px 14px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vertical-resource-section-title {
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+

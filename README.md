@@ -1,6 +1,9 @@
-# 🌟 Brilliant English Classes - Android App & Prototype
+# 🌟 Smart Study English Classes - Android App & Prototype
 
-An official, modern Kotlin Android application built for **Brilliant English Classes**. It features a Material 3 design system, Clean Architecture, and an interactive live web prototype for fast visual inspection and testing.
+An official, modern Kotlin Android application built for **Smart Study English Classes** (Lead Teacher & Legal Entity: **Krishna Kumar**). It features a Material 3 design system, Clean Architecture, and an interactive live web prototype with administrative console.
+
+* **Registered Physical Address / Center**: `NEAR BUS STAND INFRONT OF BANK OF BRODA, 1ST FLOOR, MADHEPUR, MADHUBANI , BIHAR`
+* **Lead Faculty & Legal Representative**: `Krishna Kumar`
 
 ---
 
@@ -8,7 +11,7 @@ An official, modern Kotlin Android application built for **Brilliant English Cla
 
 ### 1. Unified Top Header Box
 * **Top Row**: 
-  * **Top Left**: Official circular logo badge + Coaching title **"Brilliant English Classes"** and tagline *"Learn • Practice • Master"*.
+  * **Top Left**: Official circular logo badge + Coaching title **"Smart Study English Classes"** and tagline *"Learn • Practice • Master"*.
   * **Top Right**: Interactive Notification Bell with unread badge counter.
 * **Greeting**: **"Hello, User 👋"** with a motivational student subtitle, positioned directly under the logo.
 * **Search Course Bar**: Full-length wide search button with icon and voice mic trigger.
@@ -102,7 +105,7 @@ Organized in a balanced **3 columns per row** layout with clean iconography, rou
 
 ## 🛠️ Admin Panel Overview
 
-A comprehensive administrative control console designed specifically for coaching owners and instructors to manage all aspects of the **Brilliant English Classes** mobile app:
+A comprehensive administrative control console designed specifically for coaching owners and instructors to manage all aspects of the **Smart Study English Classes** mobile app:
 
 ### 1. 📊 Coaching Analytics & Revenue
 * Track real-time gross revenue, active student count, and batch enrollment metrics.

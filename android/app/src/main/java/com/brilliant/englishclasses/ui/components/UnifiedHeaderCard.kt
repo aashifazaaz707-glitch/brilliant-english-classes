@@ -82,7 +82,7 @@ fun UnifiedHeaderCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "B",
+                                text = "S",
                                 color = AmberAccent,
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.ExtraBold
@@ -94,7 +94,7 @@ fun UnifiedHeaderCard(
 
                     Column {
                         Text(
-                            text = "Brilliant English Classes",
+                            text = "Smart Study English Classes",
                             color = Color.White,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,

@@ -32,23 +32,11 @@ android {
 
     flavorDimensions += "client"
     productFlavors {
-        create("brilliant") {
+        create("smartstudy") {
             dimension = "client"
-            applicationId = "com.brilliant.englishclasses"
+            applicationId = "com.smartstudy.englishclasses"
             versionName = "1.0.0"
-            manifestPlaceholders["appName"] = "Brilliant English Classes"
-        }
-        create("apexneet") {
-            dimension = "client"
-            applicationId = "com.apexneet.academy"
-            versionName = "1.0.0"
-            manifestPlaceholders["appName"] = "Apex NEET & JEE Academy"
-        }
-        create("chanakya") {
-            dimension = "client"
-            applicationId = "com.chanakyaias.classes"
-            versionName = "1.0.0"
-            manifestPlaceholders["appName"] = "Chanakya IAS Academy"
+            manifestPlaceholders["appName"] = "Smart Study English Classes"
         }
     }
     compileOptions {

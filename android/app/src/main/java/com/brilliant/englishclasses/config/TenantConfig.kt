@@ -15,6 +15,9 @@ data class BrandingColors(
 )
 
 data class ContactConfig(
+    val teacherName: String = "Krishna Kumar",
+    val legalName: String = "Krishna Kumar",
+    val address: String = "NEAR BUS STAND INFRONT OF BANK OF BRODA, 1ST FLOOR, MADHEPUR, MADHUBANI , BIHAR",
     val phone: String,
     val whatsapp: String,
     val email: String,
@@ -79,12 +82,15 @@ object TenantManager {
             )
 
             val contactConfig = ContactConfig(
+                teacherName = contact.optString("teacherName", "Krishna Kumar"),
+                legalName = contact.optString("legalName", "Krishna Kumar"),
+                address = contact.optString("address", "NEAR BUS STAND INFRONT OF BANK OF BRODA, 1ST FLOOR, MADHEPUR, MADHUBANI , BIHAR"),
                 phone = contact.optString("phone", "+91 98765 43210"),
                 whatsapp = contact.optString("whatsapp", "919876543210"),
-                email = contact.optString("email", "support@coaching.com"),
-                youtubeUrl = contact.optString("youtubeUrl", "https://youtube.com"),
-                instagramUrl = contact.optString("instagramUrl", "https://instagram.com"),
-                facebookUrl = contact.optString("facebookUrl", "https://facebook.com")
+                email = contact.optString("email", "support@smartstudyenglishclasses.com"),
+                youtubeUrl = contact.optString("youtubeUrl", "https://youtube.com/@smartstudyenglishclasses"),
+                instagramUrl = contact.optString("instagramUrl", "https://instagram.com/smartstudyenglishclasses"),
+                facebookUrl = contact.optString("facebookUrl", "https://facebook.com/smartstudyenglishclasses")
             )
 
             val featureFlags = FeatureFlags(
@@ -97,9 +103,9 @@ object TenantManager {
             )
 
             val config = TenantConfig(
-                clientId = json.optString("clientId", "brilliant_english"),
-                clientName = json.optString("clientName", "Brilliant English Classes"),
-                shortName = json.optString("shortName", "Brilliant"),
+                clientId = json.optString("clientId", "smart_study_english"),
+                clientName = json.optString("clientName", "Smart Study English Classes"),
+                shortName = json.optString("shortName", "Smart Study"),
                 tagline = json.optString("tagline", "Learn • Practice • Master"),
                 category = json.optString("category", "English & Spoken Mastery"),
                 colors = colors,
@@ -126,9 +132,9 @@ object TenantManager {
 
     private fun defaultBrilliantConfig(): TenantConfig {
         return TenantConfig(
-            clientId = "brilliant_english",
-            clientName = "Brilliant English Classes",
-            shortName = "Brilliant",
+            clientId = "smart_study_english",
+            clientName = "Smart Study English Classes",
+            shortName = "Smart Study",
             tagline = "Learn • Practice • Master",
             category = "English & Spoken Mastery",
             colors = BrandingColors(
@@ -140,12 +146,15 @@ object TenantManager {
                 background = Color(0xFFF8FAFC)
             ),
             contact = ContactConfig(
+                teacherName = "Krishna Kumar",
+                legalName = "Krishna Kumar",
+                address = "NEAR BUS STAND INFRONT OF BANK OF BRODA, 1ST FLOOR, MADHEPUR, MADHUBANI , BIHAR",
                 phone = "+91 98765 43210",
                 whatsapp = "919876543210",
-                email = "support@brilliantenglishclasses.com",
-                youtubeUrl = "https://youtube.com/@brilliantenglishclasses",
-                instagramUrl = "https://instagram.com/brilliantenglishclasses",
-                facebookUrl = "https://facebook.com/brilliantenglishclasses"
+                email = "support@smartstudyenglishclasses.com",
+                youtubeUrl = "https://youtube.com/@smartstudyenglishclasses",
+                instagramUrl = "https://instagram.com/smartstudyenglishclasses",
+                facebookUrl = "https://facebook.com/smartstudyenglishclasses"
             ),
             features = FeatureFlags()
         )

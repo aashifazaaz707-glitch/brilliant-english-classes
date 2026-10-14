@@ -220,7 +220,7 @@ fun CourseDetailScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Watch Free Demo Lecture (Anti-Leak Player)",
+                            text = "Watch Free Demo Lecture",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold
                         )

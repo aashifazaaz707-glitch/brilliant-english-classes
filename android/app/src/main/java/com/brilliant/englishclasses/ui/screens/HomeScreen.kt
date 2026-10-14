@@ -36,13 +36,17 @@ import com.brilliant.englishclasses.ui.theme.RoyalBluePrimary
 fun HomeScreen(
     onCourseClick: (String) -> Unit = {},
     onNotificationClick: () -> Unit = {},
-    onSearchClick: () -> Unit = {}
+    onSearchClick: () -> Unit = {},
+    onTabSelected: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
     fun handleQuickAction(item: QuickActionItem) {
         when (item.type) {
+            QuickActionType.MY_COURSES -> {
+                onTabSelected("my_batches")
+            }
             QuickActionType.YOUTUBE -> {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.externalUrl ?: "https://youtube.com"))
                 context.startActivity(intent)
@@ -56,16 +60,16 @@ fun HomeScreen(
                 context.startActivity(intent)
             }
             QuickActionType.WHATSAPP -> {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/919876543210?text=Hello%20Brilliant%20English%20Classes,%20I%20want%20to%20inquire%20about%20your%20courses."))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/919876543210?text=Hello%20Smart%20Study%20English%20Classes,%20I%20want%20to%20inquire%20about%20your%20courses."))
                 context.startActivity(intent)
             }
             QuickActionType.SHARE_APP -> {
                 val sendIntent = Intent().apply {
                     action = Intent.ACTION_SEND
-                    putExtra(Intent.EXTRA_TEXT, "Learn English with Brilliant English Classes! Download the official app: https://brilliantenglishclasses.com/app")
+                    putExtra(Intent.EXTRA_TEXT, "Learn English with Smart Study English Classes! Download the official app: https://smartstudyenglishclasses.com/app")
                     type = "text/plain"
                 }
-                context.startActivity(Intent.createChooser(sendIntent, "Share Brilliant English Classes"))
+                context.startActivity(Intent.createChooser(sendIntent, "Share Smart Study English Classes"))
             }
             QuickActionType.ALL_COURSES -> {
                 onCourseClick("course_spoken_2026")
@@ -80,11 +84,7 @@ fun HomeScreen(
         bottomBar = {
             AppBottomBar(
                 currentRoute = "home",
-                onTabSelected = { route ->
-                    if (route != "home") {
-                        Toast.makeText(context, "Opening $route section...", Toast.LENGTH_SHORT).show()
-                    }
-                }
+                onTabSelected = onTabSelected
             )
         },
         floatingActionButton = {
@@ -144,8 +144,11 @@ fun HomeScreen(
                 }
             )
 
-            // 5. WHY CHOOSE BRILLIANT ENGLISH CLASSES SECTION
+            // 5. WHY CHOOSE SMART STUDY ENGLISH CLASSES SECTION
             WhyChooseUsCard()
+
+            // 6. OFFICIAL INSTITUTE & CENTER ADDRESS CARD
+            InstituteInfoCard()
 
             Spacer(modifier = Modifier.height(24.dp))
         }
@@ -167,7 +170,7 @@ fun WhyChooseUsCard() {
                 .padding(18.dp)
         ) {
             Text(
-                text = "Why Brilliant English Classes?",
+                text = "Why Smart Study English Classes?",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF0F172A)
@@ -177,6 +180,7 @@ fun WhyChooseUsCard() {
             val points = listOf(
                 "Personalized 1-on-1 Speaking Feedback",
                 "Proven Track Record in SSC & Bank Exams",
+                "Mentored by Krishna Kumar with 15+ Years Experience",
                 "Concise & Printable Smart PDF Formula Sheets",
                 "24/7 Dedicated Doubt Support Group"
             )
@@ -203,6 +207,61 @@ fun WhyChooseUsCard() {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun InstituteInfoCard() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp)
+        ) {
+            Text(
+                text = "🏛️ Institute & Learning Center Details",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = "Smart Study English Classes",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF1340B5)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Lead Faculty & Legal Head: Krishna Kumar",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF1E293B)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "📍 Address: NEAR BUS STAND INFRONT OF BANK OF BRODA, 1ST FLOOR, MADHEPUR, MADHUBANI , BIHAR",
+                fontSize = 12.5.sp,
+                color = Color(0xFF475569),
+                lineHeight = 18.sp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "📞 Helpline: +91 98765 43210 | WhatsApp: 919876543210",
+                fontSize = 12.sp,
+                color = Color(0xFF64748B)
+            )
         }
     }
 }
