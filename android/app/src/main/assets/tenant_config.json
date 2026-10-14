@@ -1,0 +1,44 @@
+{
+  "clientId": "brilliant_english",
+  "clientName": "Brilliant English Classes",
+  "shortName": "Brilliant",
+  "tagline": "Learn • Practice • Master",
+  "category": "English & Spoken Mastery",
+  "appId": "com.brilliant.englishclasses",
+  "version": "1.0.0",
+  "branding": {
+    "logoUrl": "logo.jpg",
+    "primaryColor": "#1340B5",
+    "primaryDarkColor": "#081D58",
+    "primaryLightColor": "#3366EE",
+    "accentColor": "#FFB800",
+    "accentDarkColor": "#E09B00",
+    "surfaceColor": "#FFFFFF",
+    "backgroundColor": "#F8FAFC"
+  },
+  "contact": {
+    "phone": "+91 98765 43210",
+    "whatsapp": "919876543210",
+    "email": "support@brilliantenglishclasses.com",
+    "website": "https://brilliantenglishclasses.com",
+    "youtubeUrl": "https://youtube.com/@brilliantenglishclasses",
+    "instagramUrl": "https://instagram.com/brilliantenglishclasses",
+    "facebookUrl": "https://facebook.com/brilliantenglishclasses",
+    "telegramUrl": "https://t.me/brilliantenglishclasses"
+  },
+  "features": {
+    "enableLiveClasses": true,
+    "enableTestSeries": true,
+    "enablePaidNotes": true,
+    "enableFreeNotes": true,
+    "enableFreeVideos": true,
+    "enableWhatsAppSupport": true,
+    "enableStudentReviews": true,
+    "enableCourseSearch": true
+  },
+  "payment": {
+    "gateway": "razorpay",
+    "currency": "INR",
+    "currencySymbol": "₹"
+  }
+}
