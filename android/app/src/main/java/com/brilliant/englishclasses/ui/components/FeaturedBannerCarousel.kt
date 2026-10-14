@@ -27,6 +27,7 @@ import com.brilliant.englishclasses.model.BannerItem
 import com.brilliant.englishclasses.ui.theme.AmberAccent
 import com.brilliant.englishclasses.ui.theme.RoyalBlueDark
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun FeaturedBannerCarousel(
     banners: List<BannerItem>,

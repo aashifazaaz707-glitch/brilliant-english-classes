@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Graduation Cap / Book in Gold Accent -->
+    <path
+        android:fillColor="#FFB800"
+        android:pathData="M54,28L20,44l34,16l30,-14.12V66h4V44L54,28z M28,52.88V66c0,11.05 11.64,20 26,20s26,-8.95 26,-20V52.88L54,64.24L28,52.88z" />
+</vector>
