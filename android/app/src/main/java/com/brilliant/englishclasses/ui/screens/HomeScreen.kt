@@ -46,7 +46,7 @@ fun HomeScreen(
     val currentUser by AndroidAuthManager.currentUser
     val liveCourses by SupabaseRepository.courses
     val liveBanners by SupabaseRepository.banners
-    val isLoading by SupabaseRepository.isLoading
+    val liveNotifications by SupabaseRepository.notifications
     var showGoogleSignInSheet by remember { mutableStateOf(false) }
 
     fun handleQuickAction(item: QuickActionItem) {
@@ -77,6 +77,12 @@ fun HomeScreen(
                     type = "text/plain"
                 }
                 context.startActivity(Intent.createChooser(sendIntent, "Share Smart Study English Classes"))
+            }
+            QuickActionType.LIVE_CLASSES -> {
+                onTabSelected("live")
+            }
+            QuickActionType.PAID_NOTES, QuickActionType.FREE_NOTES -> {
+                onTabSelected("downloads")
             }
             QuickActionType.ALL_COURSES -> {
                 liveCourses.firstOrNull()?.let { onCourseClick(it.id) }
@@ -124,7 +130,7 @@ fun HomeScreen(
             // 1. UNIFIED HEADER BOX (Logo + Name + Notification Bell + Greeting + Full Search)
             UnifiedHeaderCard(
                 studentUser = currentUser,
-                unreadNotifications = 3,
+                unreadNotifications = liveNotifications.count { it.isUnread },
                 onNotificationClick = onNotificationClick,
                 onSearchClick = onSearchClick,
                 onSignInClick = { showGoogleSignInSheet = true },

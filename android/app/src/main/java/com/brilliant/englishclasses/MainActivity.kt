@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -20,9 +21,14 @@ import com.brilliant.englishclasses.data.AndroidAuthManager
 import com.brilliant.englishclasses.data.SupabaseRepository
 import com.brilliant.englishclasses.ui.screens.CourseDetailScreen
 import com.brilliant.englishclasses.ui.screens.HomeScreen
+import com.brilliant.englishclasses.ui.screens.LiveLecturesScreen
 import com.brilliant.englishclasses.ui.screens.MyBatchesScreen
+import com.brilliant.englishclasses.ui.screens.NoInternetScreen
+import com.brilliant.englishclasses.ui.screens.NotesScreen
+import com.brilliant.englishclasses.ui.screens.NotificationsScreen
 import com.brilliant.englishclasses.ui.screens.ProfileScreen
 import com.brilliant.englishclasses.ui.theme.BrilliantEnglishClassesTheme
+import com.brilliant.englishclasses.util.rememberIsOnline
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +44,16 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AppNavigation()
+                    val isOnline by rememberIsOnline()
+                    if (!isOnline) {
+                        NoInternetScreen(
+                            onRetry = {
+                                SupabaseRepository.init(this@MainActivity)
+                            }
+                        )
+                    } else {
+                        AppNavigation()
+                    }
                 }
             }
         }
@@ -69,6 +84,18 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     val navController = rememberNavController()
 
+    fun navigateToTab(route: String, currentRoute: String) {
+        if (route == "home") {
+            navController.popBackStack("home", inclusive = false)
+        } else if (route != currentRoute) {
+            navController.navigate(route) {
+                popUpTo("home") { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = "home"
@@ -79,19 +106,21 @@ fun AppNavigation() {
                     navController.navigate("course_detail/$courseId")
                 },
                 onNotificationClick = {
-                    // Notification click
+                    navController.navigate("notifications")
                 },
                 onSearchClick = {
                     // Search click
                 },
                 onTabSelected = { route ->
-                    if (route != "home") {
-                        navController.navigate(route) {
-                            popUpTo("home") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
+                    navigateToTab(route, "home")
+                }
+            )
+        }
+
+        composable("notifications") {
+            NotificationsScreen(
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -102,15 +131,40 @@ fun AppNavigation() {
                     navController.navigate("course_detail/$courseId")
                 },
                 onTabSelected = { route ->
-                    if (route == "home") {
-                        navController.popBackStack("home", inclusive = false)
-                    } else if (route != "my_batches") {
-                        navController.navigate(route) {
-                            popUpTo("home") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
+                    navigateToTab(route, "my_batches")
+                }
+            )
+        }
+
+        composable("live") {
+            LiveLecturesScreen(
+                onTabSelected = { route ->
+                    navigateToTab(route, "live")
+                },
+                onBackClick = {
+                    navController.popBackStack("home", inclusive = false)
+                }
+            )
+        }
+
+        composable("downloads") {
+            NotesScreen(
+                onTabSelected = { route ->
+                    navigateToTab(route, "downloads")
+                },
+                onBackClick = {
+                    navController.popBackStack("home", inclusive = false)
+                }
+            )
+        }
+
+        composable("notes") {
+            NotesScreen(
+                onTabSelected = { route ->
+                    navigateToTab(route, "downloads")
+                },
+                onBackClick = {
+                    navController.popBackStack("home", inclusive = false)
                 }
             )
         }
@@ -118,15 +172,7 @@ fun AppNavigation() {
         composable("profile") {
             ProfileScreen(
                 onTabSelected = { route ->
-                    if (route == "home") {
-                        navController.popBackStack("home", inclusive = false)
-                    } else if (route != "profile") {
-                        navController.navigate(route) {
-                            popUpTo("home") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
+                    navigateToTab(route, "profile")
                 }
             )
         }

@@ -42,12 +42,9 @@ fun MyBatchesScreen(
     onCourseClick: (String) -> Unit = {},
     onTabSelected: (String) -> Unit = {}
 ) {
-    val context = LocalContext.current
     val scrollState = rememberScrollState()
     val currentUser by AndroidAuthManager.currentUser
     val enrolledCourses = SupabaseRepository.getEnrolledCourses()
-    val enrolledCourseIds by SupabaseRepository.enrolledCourseIds
-    val isLoading by SupabaseRepository.isLoading
     var showGoogleSignInSheet by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf("all") }
 
@@ -57,27 +54,6 @@ fun MyBatchesScreen(
                 currentRoute = "my_batches",
                 onTabSelected = onTabSelected
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    val intent = Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://wa.me/919876543210?text=Hello%20Krishna%20Kumar%20Sir,%20I%20have%20a%20doubt%20in%20today's%20batch.")
-                    )
-                    context.startActivity(intent)
-                },
-                containerColor = Color(0xFF25D366),
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier.padding(bottom = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Chat,
-                    contentDescription = "Batch Helpdesk",
-                    modifier = Modifier.size(28.dp)
-                )
-            }
         }
     ) { innerPadding ->
         Column(
@@ -100,34 +76,16 @@ fun MyBatchesScreen(
                     .padding(horizontal = 20.dp, vertical = 20.dp)
             ) {
                 Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "My Batches & Learning 📚",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
-                        )
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color.White.copy(alpha = 0.2f)
-                        ) {
-                            Text(
-                                text = if (currentUser != null) "${enrolledCourses.size} ENROLLED" else "GUEST",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
+                    Text(
+                        text = "My Batches 📚",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = if (currentUser != null)
-                            "Student: ${currentUser!!.fullName} (${currentUser!!.rollId})"
+                            "Student: ${currentUser!!.fullName}"
                         else
                             "Sign in with Google to view your enrolled courses & video classes",
                         fontSize = 12.sp,
@@ -217,8 +175,7 @@ fun MyBatchesScreen(
                 listOf(
                     "all" to "All Enrolled (${enrolledCourses.size})",
                     "c12" to "Class 12th Board",
-                    "spoken" to "Spoken English",
-                    "routine" to "Timetable"
+                    "spoken" to "Spoken English"
                 ).forEach { (key, label) ->
                     val isSelected = selectedFilter == key
                     Surface(
@@ -233,46 +190,6 @@ fun MyBatchesScreen(
                             fontWeight = FontWeight.Bold,
                             color = if (isSelected) Color.White else Color(0xFF475569),
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 3. FACULTY ANNOUNCEMENT CARD
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
-                border = BorderStroke(1.dp, Color(0xFFBFDBFE))
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(text = "📢", fontSize = 18.sp)
-                    Column {
-                        Text(
-                            text = "Teacher's Announcement:",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E3A8A)
-                        )
-                        Text(
-                            text = "Live speaking practice & Rainbow English chapter quiz every Sunday at 10:00 AM. Study materials are updated in the batch section.",
-                            fontSize = 11.5.sp,
-                            color = Color(0xFF1E40AF),
-                            lineHeight = 16.sp
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "— Krishna Kumar Sir",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = RoyalBluePrimary
                         )
                     }
                 }
@@ -324,7 +241,7 @@ fun MyBatchesScreen(
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "You haven't enrolled in any course yet. Explore our Class 12th Board Crash Course and Spoken English batches to start learning!",
+                                text = "You haven't enrolled in any course yet. Explore our Class 12th Board Crash Course and Spoken English batches to start studying!",
                                 fontSize = 12.5.sp,
                                 color = Color(0xFF64748B),
                                 textAlign = TextAlign.Center,
@@ -352,98 +269,6 @@ fun MyBatchesScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                     }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // 5. CLASS ROUTINE & TIMETABLE
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "📅 Daily Class Routine & Timetable",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0F172A)
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    TimetableRow(
-                        num = "1",
-                        title = "Morning Spoken English & GD",
-                        time = "07:00 AM - 08:30 AM",
-                        desc = "Hall 1, Madhepur Center • Speaking practice with Krishna Kumar Sir"
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    TimetableRow(
-                        num = "2",
-                        title = "Class 12th Board Crash Course (Live)",
-                        time = "05:00 PM - 06:30 PM",
-                        desc = "Hall 2 + Live Video Stream in App • Rainbow Prose, Poetry & Grammar"
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    TimetableRow(
-                        num = "3",
-                        title = "Sunday Mega Mock & Debate",
-                        time = "10:00 AM - 01:00 PM",
-                        desc = "Weekly District Rank Test & Live Doubt Clearing"
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // 6. OFFLINE CLASSROOM CENTER CARD
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF1F5F9))
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(text = "🏛️", fontSize = 16.sp)
-                        Text(
-                            text = "Smart Study English Classes Center",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Lead Faculty: Krishna Kumar",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = RoyalBluePrimary
-                    )
-                    Text(
-                        text = "Address: NEAR BUS STAND INFRONT OF BANK OF BRODA, 1ST FLOOR, MADHEPUR, MADHUBANI , BIHAR",
-                        fontSize = 11.5.sp,
-                        color = Color(0xFF475569),
-                        lineHeight = 16.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "✓ Please carry your Student ID / Digital Fee Receipt for offline attendance.",
-                        fontSize = 11.sp,
-                        color = SuccessGreen,
-                        fontWeight = FontWeight.SemiBold
-                    )
                 }
             }
 
@@ -478,10 +303,9 @@ fun EnrolledBatchCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header: Category Pill & Active Badge
+            // Header: Category Pill
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
@@ -495,23 +319,6 @@ fun EnrolledBatchCard(
                         color = RoyalBluePrimary,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
-                }
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFFECFDF5)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "● ", color = SuccessGreen, fontSize = 9.sp)
-                        Text(
-                            text = "ENROLLED & ACTIVE",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = SuccessGreen
-                        )
-                    }
                 }
             }
 
@@ -566,7 +373,7 @@ fun EnrolledBatchCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Action Buttons
+            // Study Action Button
             Button(
                 onClick = {
                     onCourseClick(course.id)
@@ -575,7 +382,14 @@ fun EnrolledBatchCard(
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
             ) {
-                Text(text = "⚡ Continue Learning →", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Icon(
+                    imageVector = Icons.Default.MenuBook,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(text = "Study Batch →", fontWeight = FontWeight.Bold, fontSize = 13.sp)
             }
 
             Spacer(modifier = Modifier.height(6.dp))
@@ -602,34 +416,6 @@ fun EnrolledBatchCard(
                     Text(text = "📑 $totalPdfs PDF Notes", fontSize = 11.sp, color = Color(0xFF334155))
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun TimetableRow(num: String, title: String, time: String, desc: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = RoyalBluePrimary.copy(alpha = 0.12f),
-            modifier = Modifier.size(26.dp)
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(text = num, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = RoyalBluePrimary)
-            }
-        }
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = title, fontSize = 12.5.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                Text(text = time, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = RoyalBluePrimary)
-            }
-            Text(text = desc, fontSize = 11.sp, color = Color(0xFF64748B))
         }
     }
 }

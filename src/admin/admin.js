@@ -60,13 +60,6 @@ export function renderAdminPanel(containerElement, onSwitchToApp, onSwitchToSpli
               <span>Coaching Settings</span>
             </button>
           </nav>
-
-          <div class="admin-sidebar-footer">
-            <button class="btn-open-preview" id="btn-open-mobile-app">
-              <span>📱</span>
-              <span>Open Mobile App View</span>
-            </button>
-          </div>
         </aside>
 
         <!-- Main Body -->
@@ -83,11 +76,6 @@ export function renderAdminPanel(containerElement, onSwitchToApp, onSwitchToSpli
                 <span class="admin-cloud-dot"></span>
                 <span>Supabase Live</span>
                 <button class="btn-admin-sync" id="btn-admin-cloud-sync" title="Sync live database with Supabase">🔄 Refresh</button>
-              </div>
-              <div class="view-mode-selector">
-                <button class="view-mode-btn" id="btn-view-mobile">📱 App Only</button>
-                <button class="view-mode-btn active" id="btn-view-admin">🛠️ Admin Only</button>
-                <button class="view-mode-btn" id="btn-view-split">⚡ Split Screen</button>
               </div>
             </div>
           </header>
@@ -1064,15 +1052,6 @@ function attachAdminEvents(containerElement, onSwitchToApp, onSwitchToSplit, upd
     });
   });
 
-  // View switchers
-  const btnApp = containerElement.querySelector('#btn-view-mobile');
-  if (btnApp) btnApp.addEventListener('click', onSwitchToApp);
-
-  const btnOpenApp = containerElement.querySelector('#btn-open-mobile-app');
-  if (btnOpenApp) btnOpenApp.addEventListener('click', onSwitchToApp);
-
-  const btnSplit = containerElement.querySelector('#btn-view-split');
-  if (btnSplit) btnSplit.addEventListener('click', onSwitchToSplit);
 
   // Add course modal triggers
   const btnAddCourse = containerElement.querySelector('#btn-add-course') || containerElement.querySelector('#btn-quick-add-course');
@@ -1512,6 +1491,7 @@ function openCourseModal(existingCourse = null) {
               <div class="form-group">
                 <label class="form-label">Category</label>
                 <select id="c-category" class="form-select">
+                  <option value="Class 12th Board" ${existingCourse && existingCourse.category === 'Class 12th Board' ? 'selected' : ''}>Class 12th Board</option>
                   <option value="Spoken English" ${existingCourse && existingCourse.category === 'Spoken English' ? 'selected' : ''}>Spoken English</option>
                   <option value="Govt Exams" ${existingCourse && existingCourse.category === 'Govt Exams' ? 'selected' : ''}>Govt Exams (SSC & Banking)</option>
                   <option value="Grammar & Writing" ${existingCourse && existingCourse.category === 'Grammar & Writing' ? 'selected' : ''}>Grammar & Writing</option>
@@ -1520,40 +1500,63 @@ function openCourseModal(existingCourse = null) {
               </div>
               <div class="form-group">
                 <label class="form-label">Batch Start Schedule</label>
-                <input type="text" id="c-date" class="form-input" value="${existingCourse ? existingCourse.batchDate : 'Starts Next Monday'}" placeholder="e.g. Starts 25th Oct" required />
+                <input type="text" id="c-date" class="form-input" value="${existingCourse ? (existingCourse.batchDate || existingCourse.batch_date || 'Starts 28th Oct 2026') : 'Starts 28th Oct 2026'}" placeholder="e.g. Starts 28th Oct 2026" required />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Validity Till</label>
+                <input type="text" id="c-validity" class="form-input" value="${existingCourse ? (existingCourse.validity || 'Till Board Exam / 1 Year') : 'Till Board Exam / 1 Year'}" placeholder="e.g. Till Board Exam / 1 Year" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Intro YouTube Video URL or ID</label>
+                <input type="text" id="c-intro-video" class="form-input" value="${existingCourse ? (existingCourse.intro_video_url || existingCourse.introVideoId || 'wdaBwIv7Jso') : 'wdaBwIv7Jso'}" placeholder="e.g. https://youtu.be/wdaBwIv7Jso or wdaBwIv7Jso" required />
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
                 <label class="form-label">Original Price (M.R.P. in ₹)</label>
-                <input type="number" id="c-orig-price" class="form-input" value="${existingCourse ? existingCourse.originalPrice : 2999}" required />
+                <input type="number" id="c-orig-price" class="form-input" value="${existingCourse ? (existingCourse.originalPrice || existingCourse.original_price || 1999) : 1999}" required />
               </div>
               <div class="form-group">
                 <label class="form-label">Discount Offer Price (₹)</label>
-                <input type="number" id="c-disc-price" class="form-input" value="${existingCourse ? existingCourse.discountPrice : 999}" required />
+                <input type="number" id="c-disc-price" class="form-input" value="${existingCourse ? (existingCourse.discountPrice || existingCourse.discount_price || 499) : 499}" required />
               </div>
             </div>
 
-            <div class="form-group">
-              <label class="form-label">Faculty / Mentor Name</label>
-              <input type="text" id="c-faculty" class="form-input" value="${existingCourse ? existingCourse.faculty : 'Prof. Arvind Kumar (Ex-Examiner)'}" required />
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Faculty / Teacher Name</label>
+                <input type="text" id="c-faculty" class="form-input" value="${existingCourse ? existingCourse.faculty : 'Krishna Kumar Sir'}" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Teaching Experience</label>
+                <input type="text" id="c-experience" class="form-input" value="${existingCourse ? (existingCourse.faculty_experience || existingCourse.facultyExperience || '12+ Years Teaching Experience') : '12+ Years Teaching Experience'}" placeholder="e.g. 12+ Years Teaching Experience" required />
+              </div>
             </div>
 
             <div class="form-group">
               <label class="form-label">16:9 Thumbnail Poster Image URL</label>
               <select id="c-image-preset" class="form-select" style="margin-bottom:6px;">
+                <option value="/images/course_class12_crash.jpg">Preset: Class 12th Crash Course Banner (16:9)</option>
                 <option value="/images/banner1.jpg">Preset: Spoken English Banner (16:9)</option>
                 <option value="/images/course_ssc.jpg">Preset: SSC & Banking Cracker (16:9)</option>
                 <option value="/images/course_grammar.jpg">Preset: Grammar & Writing Masterclass (16:9)</option>
                 <option value="custom">Enter Custom Image URL...</option>
               </select>
-              <input type="text" id="c-image" class="form-input" value="${existingCourse ? existingCourse.image : '/images/banner1.jpg'}" required />
+              <input type="text" id="c-image" class="form-input" value="${existingCourse ? (existingCourse.image || '/images/course_class12_crash.jpg') : '/images/course_class12_crash.jpg'}" required />
             </div>
 
             <div class="form-group">
-              <label class="form-label">Course Description</label>
-              <textarea id="c-desc" class="form-textarea" rows="2" placeholder="Brief summary of what students will achieve...">${existingCourse ? existingCourse.description : 'Comprehensive curriculum covering all fundamentals to advanced topics with weekly tests and speaking feedback.'}</textarea>
+              <label class="form-label">Batch Description & Highlights (Bullet Points - 1 per line)</label>
+              <textarea id="c-desc" class="form-textarea" rows="3" placeholder="Enter bullet points (one per line)...">${existingCourse ? (existingCourse.description || '') : 'Line-by-Line Hindi Summary of All Prose & Poetry Chapters\n50 Marks Objective Board Grammar Crash Rules & Tricks\n10 Full-Length Board Pattern Model Papers with Solutions\nVVI Short & Long Questions with Handwritten Answers'}</textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">What You Will Get In This Batch (1 item per line)</label>
+              <textarea id="c-features" class="form-textarea" rows="3" placeholder="Enter deliverables (one per line)...">${existingCourse && existingCourse.features ? (Array.isArray(existingCourse.features) ? existingCourse.features.join('\n') : existingCourse.features) : '120+ Hours Live & Recorded Interactive Sessions\nComprehensive Chapter-wise PDF Notes & Formula Sheets\nWeekly Dedicated WhatsApp Doubt Clearing Support\n50+ Topic-wise Practice Mock Tests & Solutions'}</textarea>
             </div>
           </div>
 
@@ -1582,21 +1585,22 @@ function openCourseModal(existingCourse = null) {
 
   document.getElementById('form-course-modal').addEventListener('submit', (e) => {
     e.preventDefault();
+    const rawFeatures = document.getElementById('c-features').value.trim();
+    const features = rawFeatures ? rawFeatures.split('\n').map(s => s.trim().replace(/^[-•*]\s*/, '')).filter(Boolean) : [];
+    
     const courseData = {
       title: document.getElementById('c-title').value.trim(),
       category: document.getElementById('c-category').value,
       batchDate: document.getElementById('c-date').value.trim(),
+      validity: document.getElementById('c-validity').value.trim(),
+      introVideoUrl: document.getElementById('c-intro-video').value.trim(),
       originalPrice: parseInt(document.getElementById('c-orig-price').value),
       discountPrice: parseInt(document.getElementById('c-disc-price').value),
       faculty: document.getElementById('c-faculty').value.trim(),
+      facultyExperience: document.getElementById('c-experience').value.trim(),
       image: document.getElementById('c-image').value.trim(),
       description: document.getElementById('c-desc').value.trim(),
-      features: [
-        'Live & Recorded Interactive Sessions',
-        'Downloadable High-Yield PDF Study Notes',
-        '1-on-1 Practice & Doubt Clearance',
-        'Full Topic Mock Tests & Quizzes'
-      ]
+      features
     };
 
     if (isEdit) {
@@ -1889,6 +1893,15 @@ function openAddResourceModal(courseId, subjectId, chapterId, resourceType) {
                 </div>
               </div>
             ` : resourceType === 'pdfs' ? `
+              <div class="form-group">
+                <label class="form-label">Direct Upload to Supabase Storage Bucket</label>
+                <input type="file" id="res-pdf-file" class="form-input" accept=".pdf,application/pdf" style="padding: 6px;" />
+                <div id="pdf-upload-status" style="font-size:11px; color:#10b981; margin-top:4px;"></div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Or Direct Document / Storage URL</label>
+                <input type="text" id="res-pdf-url" class="form-input" placeholder="e.g. https://... or auto-filled on upload" />
+              </div>
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label">Page Count</label>
@@ -1925,9 +1938,40 @@ function openAddResourceModal(courseId, subjectId, chapterId, resourceType) {
     </div>
   `;
 
+  const backdrop = document.getElementById('res-modal-backdrop');
   const close = () => { root.innerHTML = ''; };
   document.getElementById('btn-close-res').addEventListener('click', close);
   document.getElementById('btn-cancel-res').addEventListener('click', close);
+
+  const fileInput = document.getElementById('res-pdf-file');
+  if (fileInput) {
+    fileInput.addEventListener('change', async (ev) => {
+      const file = ev.target.files && ev.target.files[0];
+      if (file) {
+        const statusEl = document.getElementById('pdf-upload-status');
+        const urlInput = document.getElementById('res-pdf-url');
+        const sizeInput = document.getElementById('res-size');
+        if (statusEl) {
+          statusEl.style.color = '#38bdf8';
+          statusEl.textContent = '⏳ Uploading to Supabase Storage bucket...';
+        }
+        try {
+          const publicUrl = await store.uploadFileToStorage(file, 'materials');
+          if (urlInput) urlInput.value = publicUrl;
+          if (sizeInput) sizeInput.value = (file.size / (1024 * 1024)).toFixed(1) + ' MB';
+          if (statusEl) {
+            statusEl.style.color = '#10b981';
+            statusEl.textContent = '✓ Successfully uploaded to Supabase Storage!';
+          }
+        } catch (err) {
+          if (statusEl) {
+            statusEl.style.color = '#ef4444';
+            statusEl.textContent = 'Upload failed: ' + (err.message || 'Check connection');
+          }
+        }
+      }
+    });
+  }
 
   document.getElementById('form-add-resource').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -1943,6 +1987,7 @@ function openAddResourceModal(courseId, subjectId, chapterId, resourceType) {
     } else if (resourceType === 'pdfs') {
       resData.pages = document.getElementById('res-pages').value.trim() || '10 Pages';
       resData.size = document.getElementById('res-size').value.trim() || '2.0 MB';
+      resData.url = (document.getElementById('res-pdf-url')?.value || '').trim();
     } else if (resourceType === 'practices') {
       resData.questionsCount = parseInt(document.getElementById('res-questions').value) || 20;
       resData.timeMinutes = parseInt(document.getElementById('res-time').value) || 15;

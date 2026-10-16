@@ -11,10 +11,14 @@ data class Course(
     val rating: Double = 4.9,
     val studentCount: String = "4.5k+ Students",
     val batchDate: String = "Starts Oct 20, 2026",
-    val faculty: String = "Krishna Kumar",
-    val validity: String = "12 Months Validity",
+    val faculty: String = "Krishna Kumar Sir",
+    val facultyExperience: String = "12+ Years Teaching Experience",
+    val validity: String = "Till Board Exam / 1 Year",
     val category: String = "Spoken & Grammar",
     val isLive: Boolean = true,
+    val introVideoId: String = "wdaBwIv7Jso",
+    val description: String = "",
+    val descriptionPoints: List<String> = emptyList(),
     val features: List<String> = listOf(
         "120+ Hours Live & Recorded Classes",
         "Bilingual Hindi & English Explanations",
@@ -58,6 +62,7 @@ data class PdfItem(
     val title: String,
     val pages: String = "14 Pages",
     val size: String = "2.0 MB",
+    val url: String = "",
     val visible: Boolean = true
 )
 
@@ -102,4 +107,12 @@ data class QuickActionItem(
     val badge: String? = null,
     val isLive: Boolean = false,
     val externalUrl: String? = null
+)
+
+data class AppNotification(
+    val id: String,
+    val title: String,
+    val description: String,
+    val time: String,
+    val isUnread: Boolean = true
 )

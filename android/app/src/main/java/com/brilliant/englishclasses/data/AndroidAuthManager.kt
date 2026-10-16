@@ -21,6 +21,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLDecoder
 
@@ -68,6 +69,7 @@ object AndroidAuthManager {
                 idToken = token
             )
             _currentUser.value = user
+            resolveAndSyncSupabaseProfile(user, context)
         }
     }
 
@@ -217,7 +219,7 @@ object AndroidAuthManager {
         saveUser(context, user)
         _currentUser.value = user
         SupabaseRepository.refreshEnrollments(user.id)
-        syncProfileToSupabase(user)
+        resolveAndSyncSupabaseProfile(user, context)
 
         return user
     }
@@ -234,7 +236,7 @@ object AndroidAuthManager {
         saveUser(context, user)
         _currentUser.value = user
         SupabaseRepository.refreshEnrollments(user.id)
-        syncProfileToSupabase(user)
+        resolveAndSyncSupabaseProfile(user, context)
         return user
     }
 
@@ -267,6 +269,54 @@ object AndroidAuthManager {
             .apply()
     }
 
+    fun resolveAndSyncSupabaseProfile(user: StudentUser, context: Context) {
+        if (user.email.isEmpty()) return
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val encodedEmail = java.net.URLEncoder.encode(user.email, "UTF-8")
+                val getReq = Request.Builder()
+                    .url("$SUPABASE_URL/rest/v1/profiles?email=eq.$encodedEmail&select=*")
+                    .addHeader("apikey", SUPABASE_ANON_KEY)
+                    .addHeader("Authorization", "Bearer $SUPABASE_ANON_KEY")
+                    .get()
+                    .build()
+
+                var resolvedUser = user
+                httpClient.newCall(getReq).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val body = response.body?.string() ?: "[]"
+                        val arr = JSONArray(body)
+                        if (arr.length() > 0) {
+                            val profObj = arr.getJSONObject(0)
+                            val profId = profObj.optString("id", user.id)
+                            val profRoll = profObj.optString("roll_id", user.rollId)
+                            val profName = profObj.optString("full_name", user.fullName)
+                            val profAvatar = profObj.optString("avatar_url", user.avatarUrl)
+
+                            resolvedUser = user.copy(
+                                id = profId,
+                                fullName = profName,
+                                avatarUrl = profAvatar,
+                                rollId = profRoll
+                            )
+                            Log.d(TAG, "Linked Supabase profile for ${user.email} -> UUID: $profId, Roll: $profRoll")
+                        } else {
+                            syncProfileToSupabase(user)
+                        }
+                    }
+                }
+
+                saveUser(context, resolvedUser)
+                withContext(Dispatchers.Main) {
+                    _currentUser.value = resolvedUser
+                    SupabaseRepository.refreshEnrollments(resolvedUser.id)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error resolving Supabase profile", e)
+            }
+        }
+    }
+
     private fun syncProfileToSupabase(user: StudentUser) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -283,7 +333,7 @@ object AndroidAuthManager {
                 val body = json.toString().toRequestBody(mediaType)
 
                 val request = Request.Builder()
-                    .url("$SUPABASE_URL/rest/v1/profiles?on_conflict=id")
+                    .url("$SUPABASE_URL/rest/v1/profiles?on_conflict=email")
                     .addHeader("apikey", SUPABASE_ANON_KEY)
                     .addHeader("Authorization", "Bearer $SUPABASE_ANON_KEY")
                     .addHeader("Content-Type", "application/json")

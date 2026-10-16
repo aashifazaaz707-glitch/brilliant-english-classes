@@ -466,7 +466,23 @@ class Store {
         };
       }
 
-      // 5. Fetch Real Enrolled Students (for Admin Ledger)
+      // 5. Fetch Notifications
+      const { data: dbNotifs, error: notifErr } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!notifErr && dbNotifs && dbNotifs.length) {
+        this.notifications = dbNotifs.map(n => ({
+          id: n.id,
+          title: n.title,
+          desc: n.description || n.desc,
+          time: n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Official',
+          unread: true
+        }));
+      }
+
+      // 6. Fetch Real Enrolled Students (for Admin Ledger)
       await this.fetchRealStudents();
 
       this.saveLocal();
@@ -722,6 +738,9 @@ class Store {
         rating: 5.0,
         students: newCourse.students,
         faculty: newCourse.faculty,
+        faculty_experience: newCourse.facultyExperience || '12+ Years Teaching Experience',
+        validity: newCourse.validity || 'Till Board Exam / 1 Year',
+        intro_video_url: newCourse.introVideoUrl || 'wdaBwIv7Jso',
         original_price: newCourse.originalPrice,
         discount_price: newCourse.discountPrice,
         discount_percent: newCourse.discountPercent,
@@ -746,11 +765,36 @@ class Store {
       this.saveLocal();
 
       try {
-        await supabase.from('courses').update(updatedFields).eq('id', id);
+        const payload = { ...updatedFields };
+        if (payload.batchDate) payload.batch_date = payload.batchDate;
+        if (payload.originalPrice !== undefined) payload.original_price = payload.originalPrice;
+        if (payload.discountPrice !== undefined) payload.discount_price = payload.discountPrice;
+        if (payload.introVideoUrl) payload.intro_video_url = payload.introVideoUrl;
+        if (payload.facultyExperience) payload.faculty_experience = payload.facultyExperience;
+        await supabase.from('courses').update(payload).eq('id', id);
       } catch (e) {
         console.warn('Sync updateCourse error:', e);
       }
     }
+  }
+
+  async uploadFileToStorage(file, folder = 'notes') {
+    const cleanName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    const filePath = `${folder}/${cleanName}`;
+    const { data, error } = await supabase.storage
+      .from('materials')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+    if (error) {
+      console.error('Storage upload error:', error);
+      throw error;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('materials')
+      .getPublicUrl(filePath);
+
+    return urlData.publicUrl;
   }
 
   async deleteCourse(id) {
@@ -779,6 +823,7 @@ class Store {
     if (sub) {
       sub.visible = !sub.visible;
       this.saveLocal();
+      this.syncCourseCurriculum(courseId);
     }
   }
 
@@ -795,6 +840,7 @@ class Store {
     };
     course.subjects.push(newSub);
     this.saveLocal();
+    this.syncCourseCurriculum(courseId);
     return newSub;
   }
 
@@ -803,6 +849,7 @@ class Store {
     if (!course || !course.subjects) return;
     course.subjects = course.subjects.filter(s => s.id !== subjectId);
     this.saveLocal();
+    this.syncCourseCurriculum(courseId);
   }
 
   // 2. Chapter Management
@@ -815,6 +862,7 @@ class Store {
     if (ch) {
       ch.visible = !ch.visible;
       this.saveLocal();
+      this.syncCourseCurriculum(courseId);
     }
   }
 
@@ -835,6 +883,7 @@ class Store {
     };
     sub.chapters.push(newCh);
     this.saveLocal();
+    this.syncCourseCurriculum(courseId);
     return newCh;
   }
 
@@ -845,6 +894,7 @@ class Store {
     if (!sub || !sub.chapters) return;
     sub.chapters = sub.chapters.filter(c => c.id !== chapterId);
     this.saveLocal();
+    this.syncCourseCurriculum(courseId);
   }
 
   // 3. Resource Management
@@ -859,6 +909,7 @@ class Store {
     if (item) {
       item.visible = !item.visible;
       this.saveLocal();
+      this.syncCourseCurriculum(courseId);
     }
   }
 
@@ -877,6 +928,7 @@ class Store {
     };
     ch[resourceType].push(newItem);
     this.saveLocal();
+    this.syncCourseCurriculum(courseId);
     return newItem;
   }
 
@@ -889,6 +941,25 @@ class Store {
     if (!ch || !ch[resourceType]) return;
     ch[resourceType] = ch[resourceType].filter(r => r.id !== resourceId);
     this.saveLocal();
+    this.syncCourseCurriculum(courseId);
+  }
+
+  async syncCourseCurriculum(courseId) {
+    const course = this.getCourse(courseId);
+    if (!course) return;
+    try {
+      const { error } = await supabase
+        .from('courses')
+        .update({ subjects: course.subjects })
+        .eq('id', courseId);
+      if (error) {
+        console.warn('Sync course curriculum to Supabase error:', error);
+      } else {
+        console.log(`Synced curriculum for course ${courseId} to Supabase successfully`);
+      }
+    } catch (e) {
+      console.warn('Sync curriculum network error:', e);
+    }
   }
 
   // Banner actions

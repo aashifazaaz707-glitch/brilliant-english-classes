@@ -26,6 +26,7 @@ object SupabaseRepository {
     private const val PREFS_NAME = "smart_study_supabase_cache"
     private const val KEY_COURSES_CACHE = "key_courses_cache"
     private const val KEY_BANNERS_CACHE = "key_banners_cache"
+    private const val KEY_NOTIFICATIONS_CACHE = "key_notifications_cache"
     private const val KEY_ENROLLED_IDS = "key_enrolled_ids"
 
     private val httpClient = OkHttpClient.Builder()
@@ -38,6 +39,9 @@ object SupabaseRepository {
 
     private val _banners = mutableStateOf<List<BannerItem>>(emptyList())
     val banners: State<List<BannerItem>> = _banners
+
+    private val _notifications = mutableStateOf<List<AppNotification>>(emptyList())
+    val notifications: State<List<AppNotification>> = _notifications
 
     private val _enrolledCourseIds = mutableStateOf<Set<String>>(emptySet())
     val enrolledCourseIds: State<Set<String>> = _enrolledCourseIds
@@ -97,6 +101,18 @@ object SupabaseRepository {
         if (_banners.value.isEmpty()) {
             _banners.value = getDefaultBanners()
         }
+
+        val notifsJson = prefs.getString(KEY_NOTIFICATIONS_CACHE, null)
+        if (!notifsJson.isNullOrEmpty()) {
+            try {
+                _notifications.value = parseNotificationsJson(JSONArray(notifsJson))
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse cached notifications", e)
+            }
+        }
+        if (_notifications.value.isEmpty()) {
+            _notifications.value = getDefaultNotifications()
+        }
     }
 
     fun syncFromSupabase() {
@@ -153,6 +169,33 @@ object SupabaseRepository {
                                 ?.putString(KEY_BANNERS_CACHE, body)
                                 ?.apply()
                         }
+                    }
+                    Unit
+                }
+
+                // 3. Fetch live notifications from Supabase
+                val notifsReq = Request.Builder()
+                    .url("$SUPABASE_URL/rest/v1/notifications?select=*&order=created_at.desc")
+                    .addHeader("apikey", SUPABASE_ANON_KEY)
+                    .addHeader("Authorization", "Bearer $SUPABASE_ANON_KEY")
+                    .get()
+                    .build()
+
+                httpClient.newCall(notifsReq).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val body = response.body?.string() ?: "[]"
+                        val jsonArr = JSONArray(body)
+                        val fetchedNotifs = parseNotificationsJson(jsonArr)
+                        if (fetchedNotifs.isNotEmpty()) {
+                            withContext(Dispatchers.Main) {
+                                _notifications.value = fetchedNotifs
+                            }
+                            appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)?.edit()
+                                ?.putString(KEY_NOTIFICATIONS_CACHE, body)
+                                ?.apply()
+                        }
+                    } else {
+                        Log.w(TAG, "Notifications sync code: ${response.code}")
                     }
                     Unit
                 }
@@ -233,7 +276,7 @@ object SupabaseRepository {
                 val body = json.toString().toRequestBody(mediaType)
 
                 val req = Request.Builder()
-                    .url("$SUPABASE_URL/rest/v1/enrollments")
+                    .url("$SUPABASE_URL/rest/v1/enrollments?on_conflict=user_id,course_id")
                     .addHeader("apikey", SUPABASE_ANON_KEY)
                     .addHeader("Authorization", "Bearer $SUPABASE_ANON_KEY")
                     .addHeader("Content-Type", "application/json")
@@ -242,7 +285,12 @@ object SupabaseRepository {
                     .build()
 
                 httpClient.newCall(req).execute().use { response ->
-                    if (response.isSuccessful || response.code == 201 || response.code == 200 || response.code == 204) {
+                    val bodyStr = response.body?.string() ?: ""
+                    val isAlreadyEnrolled = response.code == 409 ||
+                            bodyStr.contains("duplicate", ignoreCase = true) ||
+                            bodyStr.contains("already exists", ignoreCase = true)
+
+                    if (response.isSuccessful || response.code in listOf(200, 201, 204) || isAlreadyEnrolled) {
                         withContext(Dispatchers.Main) {
                             val updated = _enrolledCourseIds.value.toMutableSet()
                             updated.add(courseId)
@@ -253,7 +301,7 @@ object SupabaseRepository {
                             onComplete(true, receiptNo)
                         }
                     } else {
-                        val errStr = response.body?.string() ?: "Enrollment failed (${response.code})"
+                        val errStr = if (bodyStr.isNotEmpty()) bodyStr else "Enrollment failed (${response.code})"
                         withContext(Dispatchers.Main) {
                             onComplete(false, errStr)
                         }
@@ -281,6 +329,106 @@ object SupabaseRepository {
         return _courses.value.find { it.id == courseId } ?: getDefaultCourses().find { it.id == courseId }
     }
 
+    private fun parseSubjectsJson(subArr: JSONArray): List<Subject> {
+        val subjects = mutableListOf<Subject>()
+        for (i in 0 until subArr.length()) {
+            val subObj = subArr.getJSONObject(i)
+            val subId = subObj.optString("id", "sub_$i")
+            val subName = subObj.optString("name", "Subject")
+            val icon = subObj.optString("icon", "📖")
+            val visible = subObj.optBoolean("visible", true)
+
+            val chapters = mutableListOf<Chapter>()
+            val chArr = subObj.optJSONArray("chapters")
+            if (chArr != null) {
+                for (j in 0 until chArr.length()) {
+                    val chObj = chArr.getJSONObject(j)
+                    val chId = chObj.optString("id", "ch_$j")
+                    val chTitle = chObj.optString("title", "Chapter")
+                    val order = chObj.optInt("order", j + 1)
+                    val chVisible = chObj.optBoolean("visible", true)
+
+                    val lectures = mutableListOf<LectureItem>()
+                    val lecArr = chObj.optJSONArray("lectures")
+                    if (lecArr != null) {
+                        for (k in 0 until lecArr.length()) {
+                            val lObj = lecArr.getJSONObject(k)
+                            lectures.add(LectureItem(
+                                id = lObj.optString("id", "lec_$k"),
+                                title = lObj.optString("title", "Lecture"),
+                                videoId = lObj.optString("videoId", ""),
+                                duration = lObj.optString("duration", "25:00"),
+                                isFree = lObj.optBoolean("isFree", true),
+                                visible = lObj.optBoolean("visible", true)
+                            ))
+                        }
+                    }
+
+                    val pdfs = mutableListOf<PdfItem>()
+                    val pdfArr = chObj.optJSONArray("pdfs")
+                    if (pdfArr != null) {
+                        for (k in 0 until pdfArr.length()) {
+                            val pObj = pdfArr.getJSONObject(k)
+                            pdfs.add(PdfItem(
+                                id = pObj.optString("id", "pdf_$k"),
+                                title = pObj.optString("title", "PDF Note"),
+                                pages = pObj.optString("pages", "10 Pages"),
+                                size = pObj.optString("size", "2.0 MB"),
+                                url = pObj.optString("url", ""),
+                                visible = pObj.optBoolean("visible", true)
+                            ))
+                        }
+                    }
+
+                    val practices = mutableListOf<PracticeItem>()
+                    val prArr = chObj.optJSONArray("practices")
+                    if (prArr != null) {
+                        for (k in 0 until prArr.length()) {
+                            val prObj = prArr.getJSONObject(k)
+                            practices.add(PracticeItem(
+                                id = prObj.optString("id", "pr_$k"),
+                                title = prObj.optString("title", "Practice Test"),
+                                questionsCount = prObj.optInt("questionsCount", 20),
+                                timeMinutes = prObj.optInt("timeMinutes", 15),
+                                marks = prObj.optInt("marks", 40),
+                                visible = prObj.optBoolean("visible", true)
+                            ))
+                        }
+                    }
+
+                    chapters.add(Chapter(
+                        id = chId,
+                        title = chTitle,
+                        order = order,
+                        visible = chVisible,
+                        lectures = lectures,
+                        pdfs = pdfs,
+                        practices = practices
+                    ))
+                }
+            }
+
+            subjects.add(Subject(
+                id = subId,
+                name = subName,
+                icon = icon,
+                visible = visible,
+                chapters = chapters
+            ))
+        }
+        return subjects
+    }
+
+    private fun extractYoutubeId(urlOrId: String): String {
+        if (urlOrId.length == 11 && !urlOrId.contains("/") && !urlOrId.contains("?")) {
+            return urlOrId
+        }
+        val pattern = "(?<=watch\\?v=|/videos/|embed/|youtu.be/|/v/|/e/|watch\\?v%3D|watch\\?feature=player_embedded&v=)[^#&?\\n]*"
+        val compiledPattern = java.util.regex.Pattern.compile(pattern)
+        val matcher = compiledPattern.matcher(urlOrId)
+        return if (matcher.find()) matcher.group() else urlOrId.ifEmpty { "wdaBwIv7Jso" }
+    }
+
     private fun parseCoursesJson(arr: JSONArray): List<Course> {
         val list = mutableListOf<Course>()
         for (i in 0 until arr.length()) {
@@ -294,11 +442,23 @@ object SupabaseRepository {
             val rating = obj.optDouble("rating", 4.90)
             val studentCount = obj.optString("students", "New Batch")
             val faculty = obj.optString("faculty", "Krishna Kumar Sir")
+            val facultyExp = obj.optString("faculty_experience", "12+ Years Teaching Experience")
+            val validity = obj.optString("validity", "Till Board Exam / 1 Year")
+            val introVideoRaw = obj.optString("intro_video_url", "wdaBwIv7Jso")
+            val introVideoId = extractYoutubeId(introVideoRaw)
             val originalPrice = obj.optInt("original_price", 1999)
             val discountPrice = obj.optInt("discount_price", 499)
             val image = obj.optString("image", "course_class12_crash.jpg")
             val description = obj.optString("description", "")
             
+            val descPoints = if (description.contains("\n")) {
+                description.split("\n").map { it.trim().removePrefix("•").removePrefix("-").trim() }.filter { it.isNotEmpty() }
+            } else if (description.contains(".")) {
+                description.split(".").map { it.trim() }.filter { it.length > 5 }
+            } else {
+                listOf(description).filter { it.isNotEmpty() }
+            }
+
             val featuresList = mutableListOf<String>()
             val featArr = obj.optJSONArray("features")
             if (featArr != null) {
@@ -315,7 +475,12 @@ object SupabaseRepository {
                 ))
             }
 
-            val subjects = getSubjectsForCourse(id)
+            val rawSubjects = obj.optJSONArray("subjects")
+            val subjects = if (rawSubjects != null && rawSubjects.length() > 0) {
+                parseSubjectsJson(rawSubjects)
+            } else {
+                getSubjectsForCourse(id)
+            }
 
             list.add(Course(
                 id = id,
@@ -328,7 +493,12 @@ object SupabaseRepository {
                 studentCount = studentCount,
                 batchDate = batchDate,
                 faculty = faculty,
+                facultyExperience = facultyExp,
+                validity = validity,
                 category = category,
+                introVideoId = introVideoId,
+                description = description,
+                descriptionPoints = descPoints,
                 features = featuresList,
                 subjects = subjects
             ))
@@ -655,6 +825,59 @@ object SupabaseRepository {
                 imageUrl = "/images/course_grammar.jpg",
                 targetCourseId = "course_grammar_mastery",
                 badge = "🎯 SPECIAL"
+            )
+        )
+    }
+
+    private fun parseNotificationsJson(arr: JSONArray): List<AppNotification> {
+        val list = mutableListOf<AppNotification>()
+        for (i in 0 until arr.length()) {
+            val obj = arr.getJSONObject(i)
+            val id = obj.optString("id", "notif_$i")
+            val title = obj.optString("title", "")
+            val desc = obj.optString("description", obj.optString("desc", ""))
+            val createdAt = obj.optString("created_at", "Official")
+            val time = formatNotificationTime(createdAt)
+            if (title.isNotEmpty()) {
+                list.add(AppNotification(
+                    id = id,
+                    title = title,
+                    description = desc,
+                    time = time,
+                    isUnread = true
+                ))
+            }
+        }
+        return list
+    }
+
+    private fun formatNotificationTime(raw: String): String {
+        return if (raw.contains("T")) {
+            raw.substringBefore("T")
+        } else {
+            raw.ifEmpty { "Recently" }
+        }
+    }
+
+    fun markAllNotificationsAsRead() {
+        _notifications.value = _notifications.value.map { it.copy(isUnread = false) }
+    }
+
+    private fun getDefaultNotifications(): List<AppNotification> {
+        return listOf(
+            AppNotification(
+                id = "notif_c12_launch",
+                title = "⚡ Class 12th English Crash Course Launched!",
+                description = "Krishna Kumar Sir has launched the targeted Class 12th English Board Exam 2026 Crash Course. Enroll today at 75% OFF!",
+                time = "Today",
+                isUnread = true
+            ),
+            AppNotification(
+                id = "notif_welcome",
+                title = "Welcome to Smart Study English Classes",
+                description = "Download study notes, watch free demo lectures, and connect with Krishna Kumar Sir.",
+                time = "Official",
+                isUnread = true
             )
         )
     }
