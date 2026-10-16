@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,11 +21,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.brilliant.englishclasses.data.AndroidAuthManager
+import com.brilliant.englishclasses.data.SupabaseRepository
+import com.brilliant.englishclasses.model.Course
 import com.brilliant.englishclasses.ui.components.AppBottomBar
+import com.brilliant.englishclasses.ui.components.GoogleColoredIcon
+import com.brilliant.englishclasses.ui.components.GoogleSignInSheet
 import com.brilliant.englishclasses.ui.theme.*
 
 @Composable
@@ -34,6 +44,11 @@ fun MyBatchesScreen(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val currentUser by AndroidAuthManager.currentUser
+    val enrolledCourses = SupabaseRepository.getEnrolledCourses()
+    val enrolledCourseIds by SupabaseRepository.enrolledCourseIds
+    val isLoading by SupabaseRepository.isLoading
+    var showGoogleSignInSheet by remember { mutableStateOf(false) }
     var selectedFilter by remember { mutableStateOf("all") }
 
     Scaffold(
@@ -101,7 +116,7 @@ fun MyBatchesScreen(
                             color = Color.White.copy(alpha = 0.2f)
                         ) {
                             Text(
-                                text = "2 ACTIVE",
+                                text = if (currentUser != null) "${enrolledCourses.size} ENROLLED" else "GUEST",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
@@ -111,14 +126,86 @@ fun MyBatchesScreen(
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Enrolled Student: Aman Sharma (SSE-2026-8492)",
+                        text = if (currentUser != null)
+                            "Student: ${currentUser!!.fullName} (${currentUser!!.rollId})"
+                        else
+                            "Sign in with Google to view your enrolled courses & video classes",
                         fontSize = 12.sp,
                         color = Color(0xFFE0E7FF)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            if (currentUser == null) {
+                // GUEST STATE - PROMINENT LOGIN CARD
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(26.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFEFF6FF)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "🔐", fontSize = 26.sp)
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "Student Login Required",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF0F172A)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Please sign in with your Google account to access your enrolled batches, video lectures, and study notes.",
+                            fontSize = 12.5.sp,
+                            color = Color(0xFF64748B),
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(18.dp))
+                        Button(
+                            onClick = { showGoogleSignInSheet = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                            border = BorderStroke(1.dp, Color(0xFFDADCE0)),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                GoogleColoredIcon(modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = "Sign In with Google",
+                                    color = Color(0xFF3C4043),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // 2. FILTER PILLS
             Row(
@@ -128,16 +215,16 @@ fun MyBatchesScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 listOf(
-                    "all" to "All Batches (2)",
+                    "all" to "All Enrolled (${enrolledCourses.size})",
+                    "c12" to "Class 12th Board",
                     "spoken" to "Spoken English",
-                    "ssc" to "SSC & Banking",
                     "routine" to "Timetable"
                 ).forEach { (key, label) ->
                     val isSelected = selectedFilter == key
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = if (isSelected) RoyalBluePrimary else Color.White,
-                        border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        border = if (isSelected) null else BorderStroke(1.dp, Color(0xFFE2E8F0)),
                         modifier = Modifier.clickable { selectedFilter = key }
                     ) {
                         Text(
@@ -160,7 +247,7 @@ fun MyBatchesScreen(
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBFDBFE))
+                border = BorderStroke(1.dp, Color(0xFFBFDBFE))
             ) {
                 Row(
                     modifier = Modifier.padding(14.dp),
@@ -175,7 +262,7 @@ fun MyBatchesScreen(
                             color = Color(0xFF1E3A8A)
                         )
                         Text(
-                            text = "Weekly live speaking practice & spoken debate test scheduled for Sunday 10:00 AM (Classroom + App Live). Please review Vocabulary Handout #4.",
+                            text = "Live speaking practice & Rainbow English chapter quiz every Sunday at 10:00 AM. Study materials are updated in the batch section.",
                             fontSize = 11.5.sp,
                             color = Color(0xFF1E40AF),
                             lineHeight = 16.sp
@@ -193,253 +280,84 @@ fun MyBatchesScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 4. BATCH 1: SPOKEN ENGLISH MASTERY 2026
-            if (selectedFilter == "all" || selectedFilter == "spoken") {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = RoyalBluePrimary.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    text = "SPOKEN ENGLISH 2026",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = RoyalBluePrimary,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
-                            Text(
-                                text = "64% COMPLETED",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = SuccessGreen
-                            )
-                        }
+            // 4. REAL DYNAMIC ENROLLED BATCHES (FROM SUPABASE)
+            if (currentUser != null) {
+                val filteredCourses = enrolledCourses.filter { course ->
+                    when (selectedFilter) {
+                        "c12" -> course.category.contains("12", ignoreCase = true) || course.id.contains("c12", ignoreCase = true) || course.id.contains("crash", ignoreCase = true)
+                        "spoken" -> course.category.contains("spoken", ignoreCase = true) || course.id.contains("spoken", ignoreCase = true)
+                        else -> true
+                    }
+                }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = "Spoken English Mastery Batch 2026",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
-                        )
-                        Text(
-                            text = "Lead Faculty: Krishna Kumar (Madhepur Center)",
-                            fontSize = 12.sp,
-                            color = Color(0xFF64748B)
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        // Progress Bar
-                        LinearProgressIndicator(
-                            progress = 0.64f,
+                if (enrolledCourses.isEmpty()) {
+                    // EMPTY ENROLLMENTS STATE (MATCHING THE BROWSER APP)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = RoyalBluePrimary,
-                            trackColor = Color(0xFFE2E8F0)
+                                .padding(28.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFF0FDF4)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = "🎓", fontSize = 26.sp)
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "No Active Batches Enrolled",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF0F172A)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "You haven't enrolled in any course yet. Explore our Class 12th Board Crash Course and Spoken English batches to start learning!",
+                                fontSize = 12.5.sp,
+                                color = Color(0xFF64748B),
+                                textAlign = TextAlign.Center,
+                                lineHeight = 18.sp
+                            )
+                            Spacer(modifier = Modifier.height(18.dp))
+                            Button(
+                                onClick = { onTabSelected("home") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(46.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = RoyalBluePrimary)
+                            ) {
+                                Text(text = "⚡ Browse All Courses", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+                    }
+                } else {
+                    // RENDER REAL ENROLLED BATCHES DYNAMICALLY
+                    filteredCourses.forEach { course ->
+                        EnrolledBatchCard(
+                            course = course,
+                            onCourseClick = onCourseClick
                         )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "18 of 28 Lectures Watched",
-                                fontSize = 11.sp,
-                                color = Color(0xFF64748B)
-                            )
-                            Text(
-                                text = "Next: Day 19 Accent Drill",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = RoyalBluePrimary
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // Action Buttons
-                        Button(
-                            onClick = {
-                                Toast.makeText(context, "Resuming Lecture 19...", Toast.LENGTH_SHORT).show()
-                                onCourseClick("course_spoken_2026")
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = RoyalBluePrimary)
-                        ) {
-                            Text(text = "▶ Resume Lecture 19", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { onCourseClick("course_spoken_2026") },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(text = "📖 28 Lectures", fontSize = 11.sp, color = Color(0xFF334155))
-                            }
-                            OutlinedButton(
-                                onClick = { Toast.makeText(context, "Opening 14 PDF Handouts...", Toast.LENGTH_SHORT).show() },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(text = "📑 14 PDF Notes", fontSize = 11.sp, color = Color(0xFF334155))
-                            }
-                        }
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            // 5. BATCH 2: SSC & BANKING ENGLISH 2026
-            if (selectedFilter == "all" || selectedFilter == "ssc") {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = AlertRed.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    text = "🔴 LIVE TODAY 5 PM",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = AlertRed,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
-                            }
-                            Text(
-                                text = "38% COMPLETED",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = RoyalBluePrimary
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = "Complete SSC & Banking English 2026",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0F172A)
-                        )
-                        Text(
-                            text = "Mentor: Krishna Kumar Sir",
-                            fontSize = 12.sp,
-                            color = Color(0xFF64748B)
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        LinearProgressIndicator(
-                            progress = 0.38f,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = Color(0xFF2563EB),
-                            trackColor = Color(0xFFE2E8F0)
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = "12 of 32 Lectures Completed",
-                                fontSize = 11.sp,
-                                color = Color(0xFF64748B)
-                            )
-                            Text(
-                                text = "Topic: Direct & Indirect Rules",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = AlertRed
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        Button(
-                            onClick = {
-                                Toast.makeText(context, "Connecting to 5:00 PM Live Classroom...", Toast.LENGTH_SHORT).show()
-                                onCourseClick("course_ssc_banking")
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE11D48))
-                        ) {
-                            Text(text = "🔴 Join Live Session at 05:00 PM", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { onCourseClick("course_ssc_banking") },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(text = "📖 32 Lectures", fontSize = 11.sp, color = Color(0xFF334155))
-                            }
-                            OutlinedButton(
-                                onClick = { Toast.makeText(context, "Opening SSC PYQ Handouts...", Toast.LENGTH_SHORT).show() },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(text = "📑 18 Handouts", fontSize = 11.sp, color = Color(0xFF334155))
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // 6. CLASS ROUTINE & TIMETABLE
+            // 5. CLASS ROUTINE & TIMETABLE
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -467,9 +385,9 @@ fun MyBatchesScreen(
 
                     TimetableRow(
                         num = "2",
-                        title = "SSC & Bank PO Grammar (Live)",
+                        title = "Class 12th Board Crash Course (Live)",
                         time = "05:00 PM - 06:30 PM",
-                        desc = "Hall 2 + Live Video Stream in App • Rules & PYQ"
+                        desc = "Hall 2 + Live Video Stream in App • Rainbow Prose, Poetry & Grammar"
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -478,14 +396,14 @@ fun MyBatchesScreen(
                         num = "3",
                         title = "Sunday Mega Mock & Debate",
                         time = "10:00 AM - 01:00 PM",
-                        desc = "Weekly District Rank Test & Doubt Clearing"
+                        desc = "Weekly District Rank Test & Live Doubt Clearing"
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 7. OFFLINE CLASSROOM CENTER CARD
+            // 6. OFFLINE CLASSROOM CENTER CARD
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -530,6 +448,160 @@ fun MyBatchesScreen(
             }
 
             Spacer(modifier = Modifier.height(28.dp))
+        }
+    }
+
+    if (showGoogleSignInSheet) {
+        GoogleSignInSheet(
+            onDismiss = { showGoogleSignInSheet = false },
+            onSuccess = { showGoogleSignInSheet = false }
+        )
+    }
+}
+
+@Composable
+fun EnrolledBatchCard(
+    course: Course,
+    onCourseClick: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val totalLectures = course.subjects.sumOf { s -> s.chapters.sumOf { c -> c.lectures.size } }
+    val totalPdfs = course.subjects.sumOf { s -> s.chapters.sumOf { c -> c.pdfs.size } }
+    val totalTests = course.subjects.sumOf { s -> s.chapters.sumOf { c -> c.practices.size } }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Header: Category Pill & Active Badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = RoyalBluePrimary.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        text = course.category.uppercase(),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = RoyalBluePrimary,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = Color(0xFFECFDF5)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "● ", color = SuccessGreen, fontSize = 9.sp)
+                        Text(
+                            text = "ENROLLED & ACTIVE",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = SuccessGreen
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Course Title & Faculty
+            Text(
+                text = course.title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF0F172A),
+                lineHeight = 20.sp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "Mentor: ${course.faculty}",
+                fontSize = 12.sp,
+                color = Color(0xFF64748B)
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Progress Bar
+            LinearProgressIndicator(
+                progress = 0.50f,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = SuccessGreen,
+                trackColor = Color(0xFFE2E8F0)
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "📚 ${course.subjects.size} Subjects • 🎥 $totalLectures Lectures",
+                    fontSize = 11.sp,
+                    color = Color(0xFF64748B)
+                )
+                Text(
+                    text = "📑 $totalPdfs Notes • 📝 $totalTests Tests",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = RoyalBluePrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Action Buttons
+            Button(
+                onClick = {
+                    onCourseClick(course.id)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
+            ) {
+                Text(text = "⚡ Continue Learning →", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { onCourseClick(course.id) },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(text = "📖 Chapters (${course.subjects.size})", fontSize = 11.sp, color = Color(0xFF334155))
+                }
+                OutlinedButton(
+                    onClick = {
+                        Toast.makeText(context, "Opening study notes for ${course.title}...", Toast.LENGTH_SHORT).show()
+                        onCourseClick(course.id)
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(text = "📑 $totalPdfs PDF Notes", fontSize = 11.sp, color = Color(0xFF334155))
+                }
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,7 +23,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.brilliant.englishclasses.data.AndroidAuthManager
 import com.brilliant.englishclasses.data.MockData
+import com.brilliant.englishclasses.data.SupabaseRepository
 import com.brilliant.englishclasses.model.Course
 import com.brilliant.englishclasses.model.QuickActionItem
 import com.brilliant.englishclasses.model.QuickActionType
@@ -41,6 +43,11 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val currentUser by AndroidAuthManager.currentUser
+    val liveCourses by SupabaseRepository.courses
+    val liveBanners by SupabaseRepository.banners
+    val isLoading by SupabaseRepository.isLoading
+    var showGoogleSignInSheet by remember { mutableStateOf(false) }
 
     fun handleQuickAction(item: QuickActionItem) {
         when (item.type) {
@@ -72,7 +79,7 @@ fun HomeScreen(
                 context.startActivity(Intent.createChooser(sendIntent, "Share Smart Study English Classes"))
             }
             QuickActionType.ALL_COURSES -> {
-                onCourseClick("course_spoken_2026")
+                liveCourses.firstOrNull()?.let { onCourseClick(it.id) }
             }
             else -> {
                 Toast.makeText(context, "Opening ${item.title}...", Toast.LENGTH_SHORT).show()
@@ -116,31 +123,47 @@ fun HomeScreen(
         ) {
             // 1. UNIFIED HEADER BOX (Logo + Name + Notification Bell + Greeting + Full Search)
             UnifiedHeaderCard(
-                userName = "Student",
+                studentUser = currentUser,
                 unreadNotifications = 3,
                 onNotificationClick = onNotificationClick,
-                onSearchClick = onSearchClick
+                onSearchClick = onSearchClick,
+                onSignInClick = { showGoogleSignInSheet = true },
+                onProfileClick = { onTabSelected("profile") }
             )
 
-            // 2. FEATURED COURSES / NEW BATCH LAUNCHES CAROUSEL (16:9 YouTube thumbnail size)
+            // 2. FEATURED COURSES / NEW BATCH LAUNCHES CAROUSEL (Live from Supabase)
             FeaturedBannerCarousel(
-                banners = MockData.banners,
+                banners = liveBanners,
                 onBannerClick = { courseId -> onCourseClick(courseId) }
             )
 
-            // 3. QUICK ACTION 3-COLUMN GRID (All courses, My courses, Live classes, WhatsApp, YouTube, etc.)
+            // 3. QUICK ACTION 3-COLUMN GRID
             QuickActionGrid(
                 items = MockData.quickActions,
                 onActionClick = { item -> handleQuickAction(item) }
             )
 
-            // 4. HORIZONTALLY SCROLLING BOXES (1 COMPLETE BOX + 30% NEXT BOX PEEK)
+            // 4. HORIZONTALLY SCROLLING BOXES (Live from Supabase)
             CourseHorizontalScrollSection(
                 title = "🔥 Popular Batches & Courses",
-                courses = MockData.featuredCourses,
+                courses = liveCourses,
                 onCourseClick = { course -> onCourseClick(course.id) },
                 onBuyNowClick = { course ->
-                    Toast.makeText(context, "Proceeding to checkout: ${course.title} (₹${course.discountPrice})", Toast.LENGTH_LONG).show()
+                    val user = currentUser
+                    if (user == null) {
+                        Toast.makeText(context, "Please sign in to enroll in ${course.title}", Toast.LENGTH_SHORT).show()
+                        showGoogleSignInSheet = true
+                    } else {
+                        Toast.makeText(context, "Enrolling in ${course.title}...", Toast.LENGTH_SHORT).show()
+                        SupabaseRepository.enrollUser(user.id, course.id, course.discountPrice) { success, recNo ->
+                            if (success) {
+                                Toast.makeText(context, "🎉 Enrolled successfully! (Receipt #$recNo)", Toast.LENGTH_LONG).show()
+                                onTabSelected("my_batches")
+                            } else {
+                                Toast.makeText(context, "Could not enroll: $recNo", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
                 }
             )
 
@@ -152,6 +175,13 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+    if (showGoogleSignInSheet) {
+        GoogleSignInSheet(
+            onDismiss = { showGoogleSignInSheet = false },
+            onSuccess = { showGoogleSignInSheet = false }
+        )
     }
 }
 
@@ -179,7 +209,7 @@ fun WhyChooseUsCard() {
 
             val points = listOf(
                 "Personalized 1-on-1 Speaking Feedback",
-                "Proven Track Record in SSC & Bank Exams",
+                "Proven Track Record in BSEB Class 12th & Competitive Exams",
                 "Mentored by Krishna Kumar with 15+ Years Experience",
                 "Concise & Printable Smart PDF Formula Sheets",
                 "24/7 Dedicated Doubt Support Group"

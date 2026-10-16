@@ -89,7 +89,7 @@ fun FeaturedBannerCarousel(
                     // Course Poster Image
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(banner.imageUrl)
+                            .data(com.brilliant.englishclasses.data.SupabaseRepository.resolveImageUrl(banner.imageUrl))
                             .crossfade(true)
                             .build(),
                         contentDescription = banner.title,

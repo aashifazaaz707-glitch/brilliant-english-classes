@@ -119,7 +119,7 @@ fun CourseCardItem(
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(course.thumbnail)
+                        .data(com.brilliant.englishclasses.data.SupabaseRepository.resolveImageUrl(course.thumbnail))
                         .crossfade(true)
                         .build(),
                     contentDescription = course.title,

@@ -1,6 +1,9 @@
 package com.brilliant.englishclasses
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +16,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.brilliant.englishclasses.data.AndroidAuthManager
+import com.brilliant.englishclasses.data.SupabaseRepository
 import com.brilliant.englishclasses.ui.screens.CourseDetailScreen
 import com.brilliant.englishclasses.ui.screens.HomeScreen
 import com.brilliant.englishclasses.ui.screens.MyBatchesScreen
@@ -22,6 +27,11 @@ import com.brilliant.englishclasses.ui.theme.BrilliantEnglishClassesTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AndroidAuthManager.init(this)
+        SupabaseRepository.init(this)
+
+        handleIncomingDeepLink(intent)
+
         setContent {
             BrilliantEnglishClassesTheme {
                 Surface(
@@ -29,6 +39,26 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     AppNavigation()
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingDeepLink(intent)
+    }
+
+    private fun handleIncomingDeepLink(intent: Intent?) {
+        val uri: Uri? = intent?.data
+        if (uri != null && uri.scheme == "smartstudy" && uri.host == "auth-callback") {
+            Toast.makeText(this, "Completing Google Sign-In...", Toast.LENGTH_SHORT).show()
+            AndroidAuthManager.handleOAuthRedirectUri(uri, this) { success, user ->
+                if (success && user != null) {
+                    Toast.makeText(this, "Welcome ${user.fullName}!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Google Sign-In was cancelled or expired.", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -49,10 +79,10 @@ fun AppNavigation() {
                     navController.navigate("course_detail/$courseId")
                 },
                 onNotificationClick = {
-                    // Navigate or trigger notifications
+                    // Notification click
                 },
                 onSearchClick = {
-                    // Search action
+                    // Search click
                 },
                 onTabSelected = { route ->
                     if (route != "home") {

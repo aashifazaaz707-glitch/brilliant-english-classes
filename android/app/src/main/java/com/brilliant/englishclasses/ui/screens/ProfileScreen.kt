@@ -26,7 +26,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextAlign
+import com.brilliant.englishclasses.data.AndroidAuthManager
 import com.brilliant.englishclasses.ui.components.AppBottomBar
+import com.brilliant.englishclasses.ui.components.GoogleColoredIcon
+import com.brilliant.englishclasses.ui.components.GoogleSignInSheet
 import com.brilliant.englishclasses.ui.theme.*
 
 @Composable
@@ -35,6 +39,8 @@ fun ProfileScreen(
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val currentUser by AndroidAuthManager.currentUser
+    var showGoogleSignInSheet by remember { mutableStateOf(false) }
     var showFeeReceiptDialog by remember { mutableStateOf(false) }
     var showTermsDialog by remember { mutableStateOf(false) }
     var showPrivacyDialog by remember { mutableStateOf(false) }
@@ -55,7 +61,7 @@ fun ProfileScreen(
                 .background(Color(0xFFF8FAFC))
                 .verticalScroll(scrollState)
         ) {
-            // 1. HERO PROFILE CARD
+            // 1. HERO PROFILE CARD (GUEST vs VERIFIED STUDENT)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -67,66 +73,127 @@ fun ProfileScreen(
                     )
                     .padding(horizontal = 20.dp, vertical = 24.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Avatar
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(AmberAccent),
-                        contentAlignment = Alignment.Center
+                if (currentUser != null) {
+                    val user = currentUser!!
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            text = "AS",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = RoyalBlueDark
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        // Avatar
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(AmberAccent),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = "Aman Sharma",
-                                fontSize = 19.sp,
+                                text = user.fullName.take(2).uppercase(),
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
+                                color = RoyalBlueDark
                             )
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = SuccessGreen
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Text(
-                                    text = "ACTIVE",
-                                    fontSize = 9.5.sp,
+                                    text = user.fullName,
+                                    fontSize = 18.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                    color = Color.White
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = SuccessGreen
+                                ) {
+                                    Text(
+                                        text = "ACTIVE",
+                                        fontSize = 9.5.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.White,
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Roll ID: ${user.rollId}",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AmberAccentLight
+                            )
+                            Text(
+                                text = user.email.ifEmpty { "Guided by Krishna Kumar Sir" },
+                                fontSize = 11.5.sp,
+                                color = Color(0xFFCBD5E1)
+                            )
+                        }
+                    }
+                } else {
+                    // GUEST STATE - 1-TAP GOOGLE SIGN IN
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "🎓", fontSize = 28.sp)
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "Smart Study Student Portal",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Sign in with your Google account to access your courses, video lectures, and student ID card.",
+                            fontSize = 12.sp,
+                            color = Color(0xFFE0E7FF),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { showGoogleSignInSheet = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                GoogleColoredIcon(modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = "Continue with Google",
+                                    color = Color(0xFF3C4043),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Roll ID: SSE-2026-8492",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = AmberAccentLight
-                        )
-                        Text(
-                            text = "Batch: Spoken English & SSC 2026",
-                            fontSize = 11.5.sp,
-                            color = Color(0xFFCBD5E1)
-                        )
                     }
                 }
             }
+
+            val enrolledCourses = com.brilliant.englishclasses.data.SupabaseRepository.getEnrolledCourses()
+            val totalLecturesCount = enrolledCourses.sumOf { c -> c.subjects.sumOf { s -> s.chapters.sumOf { it.lectures.size } } }
+            val totalNotesCount = enrolledCourses.sumOf { c -> c.subjects.sumOf { s -> s.chapters.sumOf { it.pdfs.size } } }
 
             // 2. 4-STAT METRIC ROW
             Row(
@@ -136,10 +203,10 @@ fun ProfileScreen(
                     .offset(y = (-14).dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                ProfileStatCard(modifier = Modifier.weight(1f), number = "2", label = "Batches")
-                ProfileStatCard(modifier = Modifier.weight(1f), number = "28", label = "Lectures")
-                ProfileStatCard(modifier = Modifier.weight(1f), number = "14", label = "Notes")
-                ProfileStatCard(modifier = Modifier.weight(1f), number = "88%", label = "Accuracy")
+                ProfileStatCard(modifier = Modifier.weight(1f), number = "${enrolledCourses.size}", label = "Batches")
+                ProfileStatCard(modifier = Modifier.weight(1f), number = "$totalLecturesCount", label = "Lectures")
+                ProfileStatCard(modifier = Modifier.weight(1f), number = "$totalNotesCount", label = "Notes")
+                ProfileStatCard(modifier = Modifier.weight(1f), number = if (enrolledCourses.isNotEmpty()) "92%" else "0%", label = "Progress")
             }
 
             // 3. ACADEMIC & DIGITAL RECEIPTS SECTION
@@ -148,9 +215,9 @@ fun ProfileScreen(
                     icon = "🧾",
                     iconBg = Color(0xFFEFF6FF),
                     title = "Digital Fee Receipt & Student ID",
-                    desc = "Receipt #SSE-REC-2026-0428 • Paid ₹2,499",
-                    badgeText = "PAID",
-                    badgeColor = SuccessGreen,
+                    desc = if (enrolledCourses.isNotEmpty()) "Receipt #SSE-REC-2026 • Verified Admission" else "No active fee receipts yet",
+                    badgeText = if (enrolledCourses.isNotEmpty()) "PAID" else "N/A",
+                    badgeColor = if (enrolledCourses.isNotEmpty()) SuccessGreen else Color(0xFF94A3B8),
                     onClick = { showFeeReceiptDialog = true }
                 )
                 Divider(color = Color(0xFFF1F5F9))
@@ -159,8 +226,8 @@ fun ProfileScreen(
                     icon = "🎓",
                     iconBg = Color(0xFFF0FDF4),
                     title = "My Enrolled Batches",
-                    desc = "Spoken English & SSC Foundation 2026",
-                    badgeText = "2 Active",
+                    desc = if (enrolledCourses.isNotEmpty()) "${enrolledCourses.size} active courses on Supabase" else "No courses enrolled yet",
+                    badgeText = "${enrolledCourses.size} Active",
                     badgeColor = RoyalBluePrimary,
                     onClick = { onTabSelected("my_batches") }
                 )
@@ -287,7 +354,7 @@ fun ProfileScreen(
                         onClick = {
                             val intent = Intent(
                                 Intent.ACTION_VIEW,
-                                Uri.parse("https://wa.me/919876543210?text=Hello%20Krishna%20Kumar%20Sir,%20I%20am%20Aman%20Sharma%20(SSE-2026-8492).")
+                                Uri.parse("https://wa.me/919876543210?text=Hello%20Krishna%20Kumar%20Sir,%20I%20have%20an%20inquiry%20regarding%20Smart%20Study%20English%20Classes.")
                             )
                             context.startActivity(intent)
                         },
@@ -352,22 +419,42 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 6. LOGOUT BUTTON
+            // 6. LOGOUT OR SIGN IN BUTTON
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             ) {
-                OutlinedButton(
-                    onClick = {
-                        Toast.makeText(context, "Signed out from Aman Sharma (SSE-2026-8492)", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AlertRed)
-                ) {
-                    Text(text = "🚪 Sign Out / Switch Account", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                if (currentUser != null) {
+                    OutlinedButton(
+                        onClick = {
+                            AndroidAuthManager.signOut(context)
+                            Toast.makeText(context, "Signed out from student portal", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, Color(0xFFFCA5A5)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AlertRed)
+                    ) {
+                        Text(text = "🚪 Sign Out / Switch Account", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                } else {
+                    Button(
+                        onClick = { showGoogleSignInSheet = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, Color(0xFFDADCE0)),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            GoogleColoredIcon(modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Sign In with Google", color = Color(0xFF3C4043), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
+                    }
                 }
             }
 
@@ -427,6 +514,13 @@ fun ProfileScreen(
         }
     }
 
+    if (showGoogleSignInSheet) {
+        GoogleSignInSheet(
+            onDismiss = { showGoogleSignInSheet = false },
+            onSuccess = { showGoogleSignInSheet = false }
+        )
+    }
+
     // 1. FEE RECEIPT MODAL DIALOG
     if (showFeeReceiptDialog) {
         AlertDialog(
@@ -475,9 +569,9 @@ fun ProfileScreen(
 
                     Divider(modifier = Modifier.padding(vertical = 4.dp), color = Color(0xFFE2E8F0))
 
-                    ReceiptItem(label = "Receipt No:", value = "SSE-REC-2026-0428")
-                    ReceiptItem(label = "Student Name:", value = "Aman Sharma")
-                    ReceiptItem(label = "Roll ID:", value = "SSE-2026-8492")
+                    ReceiptItem(label = "Receipt No:", value = "SSE-REC-2026-0001")
+                    ReceiptItem(label = "Student Name:", value = "Verified Student")
+                    ReceiptItem(label = "Roll ID:", value = "SSE-2026-ACTIVE")
                     ReceiptItem(label = "Enrolled:", value = "Spoken English + SSC Combo 2026")
                     ReceiptItem(label = "Date:", value = "12 Jan 2026")
                     ReceiptItem(label = "Valid:", value = "Full Year 2026")

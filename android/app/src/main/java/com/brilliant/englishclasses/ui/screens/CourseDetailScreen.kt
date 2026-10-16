@@ -1,6 +1,7 @@
 package com.brilliant.englishclasses.ui.screens
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import com.brilliant.englishclasses.ui.components.SecureYouTubePlayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,10 +27,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.brilliant.englishclasses.data.AndroidAuthManager
 import com.brilliant.englishclasses.data.MockData
+import com.brilliant.englishclasses.data.SupabaseRepository
+import com.brilliant.englishclasses.model.Chapter
+import com.brilliant.englishclasses.model.Subject
+import com.brilliant.englishclasses.ui.components.GoogleSignInSheet
+import com.brilliant.englishclasses.ui.components.SecureYouTubePlayer
 import com.brilliant.englishclasses.ui.theme.AmberAccent
 import com.brilliant.englishclasses.ui.theme.RoyalBlueDark
 import com.brilliant.englishclasses.ui.theme.RoyalBluePrimary
+import com.brilliant.englishclasses.ui.theme.SuccessGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,9 +46,20 @@ fun CourseDetailScreen(
     onBackClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val course = MockData.featuredCourses.find { it.id == courseId } ?: MockData.featuredCourses.first()
+    val course = SupabaseRepository.getCourseById(courseId)
+        ?: SupabaseRepository.courses.value.firstOrNull()
+        ?: MockData.featuredCourses.first()
+
+    val currentUser by AndroidAuthManager.currentUser
+    val enrolledIds by SupabaseRepository.enrolledCourseIds
+    val isEnrolled = enrolledIds.contains(course.id)
+
     val scrollState = rememberScrollState()
     var isVideoPlayerActive by remember { mutableStateOf(false) }
+    var activeVideoId by remember { mutableStateOf("wdaBwIv7Jso") }
+    var activeLectureTitle by remember { mutableStateOf(course.title) }
+    var showGoogleSignInSheet by remember { mutableStateOf(false) }
+    var isEnrolling by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -69,7 +87,7 @@ fun CourseDetailScreen(
             )
         },
         bottomBar = {
-            // Sticky Purchase Footer
+            // Sticky Purchase / Access Footer
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -107,27 +125,68 @@ fun CourseDetailScreen(
                         )
                     }
 
-                    Button(
-                        onClick = {
-                            Toast.makeText(context, "Redirecting to Razorpay/PhonePe Payment Gateway...", Toast.LENGTH_LONG).show()
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = RoyalBluePrimary)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Bolt,
-                            contentDescription = null,
-                            tint = AmberAccent,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Enroll Now",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                    if (isEnrolled) {
+                        Button(
+                            onClick = {
+                                isVideoPlayerActive = true
+                                Toast.makeText(context, "Resuming course lectures...", Toast.LENGTH_SHORT).show()
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Enrolled • Watch",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                val user = currentUser
+                                if (user == null) {
+                                    Toast.makeText(context, "Please sign in to enroll", Toast.LENGTH_SHORT).show()
+                                    showGoogleSignInSheet = true
+                                } else {
+                                    isEnrolling = true
+                                    SupabaseRepository.enrollUser(user.id, course.id, course.discountPrice) { success, recNo ->
+                                        isEnrolling = false
+                                        if (success) {
+                                            Toast.makeText(context, "🎉 Enrolled in ${course.title}! (Receipt #$recNo)", Toast.LENGTH_LONG).show()
+                                        } else {
+                                            Toast.makeText(context, "Enrollment error: $recNo", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(48.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = RoyalBluePrimary),
+                            enabled = !isEnrolling
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bolt,
+                                contentDescription = null,
+                                tint = AmberAccent,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isEnrolling) "Processing..." else "Enroll Now",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }
@@ -143,8 +202,8 @@ fun CourseDetailScreen(
             // 16:9 Thumbnail Header or Anti-Leak YouTube Video Player
             if (isVideoPlayerActive) {
                 SecureYouTubePlayer(
-                    videoId = "wdaBwIv7Jso",
-                    lectureTitle = course.title,
+                    videoId = activeVideoId,
+                    lectureTitle = activeLectureTitle,
                     isLive = false
                 )
             } else {
@@ -156,7 +215,7 @@ fun CourseDetailScreen(
                 ) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
-                            .data(course.thumbnail)
+                            .data(SupabaseRepository.resolveImageUrl(course.thumbnail))
                             .crossfade(true)
                             .build(),
                         contentDescription = course.title,
@@ -238,9 +297,9 @@ fun CourseDetailScreen(
 
                 Text(
                     text = course.subtitle,
-                    fontSize = 14.sp,
+                    fontSize = 13.5.sp,
                     color = Color(0xFF475569),
-                    lineHeight = 20.sp
+                    lineHeight = 19.sp
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -270,7 +329,7 @@ fun CourseDetailScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // Faculty Info Card
                 Card(
@@ -298,7 +357,7 @@ fun CourseDetailScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Course Mentor",
+                                text = "Lead Faculty & Mentor",
                                 fontSize = 11.sp,
                                 color = Color(0xFF64748B)
                             )
@@ -312,7 +371,105 @@ fun CourseDetailScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // COURSE SYLLABUS & CHAPTERS (MATCHING THE BROWSER APP)
+                if (course.subjects.isNotEmpty()) {
+                    Text(
+                        text = "📖 Course Syllabus & Study Materials",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    course.subjects.forEach { subject ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(text = subject.icon, fontSize = 18.sp)
+                                    Text(
+                                        text = subject.name,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF1E293B)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                subject.chapters.forEach { chapter ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = Color(0xFFF8FAFC),
+                                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 3.dp)
+                                    ) {
+                                        Column(modifier = Modifier.padding(10.dp)) {
+                                            Text(
+                                                text = chapter.title,
+                                                fontSize = 12.5.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color(0xFF0F172A)
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                Text(
+                                                    text = "🎥 ${chapter.lectures.size} Lectures",
+                                                    fontSize = 11.sp,
+                                                    color = RoyalBluePrimary
+                                                )
+                                                Text(
+                                                    text = "📑 ${chapter.pdfs.size} PDFs",
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFF059669)
+                                                )
+                                                Text(
+                                                    text = "📝 ${chapter.practices.size} Tests",
+                                                    fontSize = 11.sp,
+                                                    color = Color(0xFF7C3AED)
+                                                )
+                                            }
+
+                                            // Lecture play click
+                                            chapter.lectures.firstOrNull()?.let { lec ->
+                                                Spacer(modifier = Modifier.height(6.dp))
+                                                TextButton(
+                                                    onClick = {
+                                                        activeVideoId = lec.videoId
+                                                        activeLectureTitle = lec.title
+                                                        isVideoPlayerActive = true
+                                                    },
+                                                    contentPadding = PaddingValues(0.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "▶ Play Lecture: ${lec.title}",
+                                                        fontSize = 11.5.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = RoyalBluePrimary
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 // What You Will Get / Features
                 Text(
@@ -328,7 +485,7 @@ fun CourseDetailScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 5.dp),
+                            .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -350,5 +507,12 @@ fun CourseDetailScreen(
                 Spacer(modifier = Modifier.height(30.dp))
             }
         }
+    }
+
+    if (showGoogleSignInSheet) {
+        GoogleSignInSheet(
+            onDismiss = { showGoogleSignInSheet = false },
+            onSuccess = { showGoogleSignInSheet = false }
+        )
     }
 }

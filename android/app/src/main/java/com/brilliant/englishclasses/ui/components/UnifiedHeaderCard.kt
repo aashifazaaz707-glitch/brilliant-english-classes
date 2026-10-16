@@ -24,12 +24,17 @@ import com.brilliant.englishclasses.ui.theme.AmberAccent
 import com.brilliant.englishclasses.ui.theme.RoyalBlueDark
 import com.brilliant.englishclasses.ui.theme.RoyalBluePrimary
 
+import com.brilliant.englishclasses.model.StudentUser
+
 @Composable
 fun UnifiedHeaderCard(
-    userName: String = "User",
+    studentUser: StudentUser? = null,
+    userName: String = studentUser?.fullName?.split(" ")?.firstOrNull() ?: "Student",
     unreadNotifications: Int = 3,
     onNotificationClick: () -> Unit = {},
-    onSearchClick: () -> Unit = {}
+    onSearchClick: () -> Unit = {},
+    onSignInClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {}
 ) {
     // Unified box wrapping Logo, Coaching Name, Notification Bell, Greeting, and Full-Width Search
     Box(
@@ -50,7 +55,7 @@ fun UnifiedHeaderCard(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // TOP ROW: Logo & Name on Left | Notification Bell on Right
+            // TOP ROW: Logo & Name on Left | Sign In / Avatar + Bell on Right
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -109,40 +114,86 @@ fun UnifiedHeaderCard(
                     }
                 }
 
-                // Top Right: Notification Bell Button with Notification Count Badge
-                Box(
-                    contentAlignment = Alignment.TopEnd
+                // Top Right: Google Sign In / Profile Avatar + Notification Bell
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    IconButton(
-                        onClick = onNotificationClick,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.16f))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notifications",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    if (unreadNotifications > 0) {
+                    if (studentUser != null) {
+                        // User Avatar
                         Box(
                             modifier = Modifier
-                                .offset(x = 2.dp, y = (-2).dp)
-                                .size(18.dp)
+                                .size(36.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFEF4444)),
+                                .background(AmberAccent)
+                                .clickable { onProfileClick() },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = unreadNotifications.toString(),
-                                color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
+                                text = studentUser.fullName.take(2).uppercase(),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = RoyalBlueDark
                             )
+                        }
+                    } else {
+                        // Google Sign-In Pill Button
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.White,
+                            modifier = Modifier.clickable { onSignInClick() }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                GoogleColoredIcon(modifier = Modifier.size(13.dp))
+                                Text(
+                                    text = "Sign In",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF1E293B)
+                                )
+                            }
+                        }
+                    }
+
+                    // Bell
+                    Box(
+                        contentAlignment = Alignment.TopEnd
+                    ) {
+                        IconButton(
+                            onClick = onNotificationClick,
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.16f))
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notifications",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        if (unreadNotifications > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .offset(x = 2.dp, y = (-2).dp)
+                                    .size(16.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFEF4444)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = unreadNotifications.toString(),
+                                    color = Color.White,
+                                    fontSize = 9.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -150,16 +201,16 @@ fun UnifiedHeaderCard(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // GREETING: Just below logo
+            // GREETING
             Text(
-                text = "Hello, $userName 👋",
+                text = if (studentUser != null) "Hello, ${studentUser.fullName.split(" ").firstOrNull() ?: "Student"} 👋" else "Hello, Student 👋",
                 color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(3.dp))
             Text(
-                text = "What would you like to master today?",
+                text = if (studentUser != null) "Roll ID: ${studentUser.rollId} • Guided by Krishna Kumar Sir" else "Join Krishna Kumar Sir • Learn • Practice • Master",
                 color = Color.White.copy(alpha = 0.85f),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Normal

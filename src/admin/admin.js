@@ -79,6 +79,11 @@ export function renderAdminPanel(containerElement, onSwitchToApp, onSwitchToSpli
             </div>
 
             <div class="admin-topbar-actions">
+              <div class="admin-cloud-status-pill">
+                <span class="admin-cloud-dot"></span>
+                <span>Supabase Live</span>
+                <button class="btn-admin-sync" id="btn-admin-cloud-sync" title="Sync live database with Supabase">🔄 Refresh</button>
+              </div>
               <div class="view-mode-selector">
                 <button class="view-mode-btn" id="btn-view-mobile">📱 App Only</button>
                 <button class="view-mode-btn active" id="btn-view-admin">🛠️ Admin Only</button>
@@ -163,7 +168,7 @@ function renderDashboardTab() {
   const totalCourses = store.courses.length;
   const totalBanners = store.banners.length;
   const totalNotes = store.notes.length;
-  const totalRevenue = store.students.reduce((acc, s) => acc + s.amount, 0) + 195000;
+  const totalRevenue = store.students.reduce((acc, s) => acc + (Number(s.amount) || 0), 0);
 
   return `
     <div class="stat-cards-grid">
@@ -174,8 +179,8 @@ function renderDashboardTab() {
         </div>
         <div class="stat-value">₹${totalRevenue.toLocaleString('en-IN')}</div>
         <div class="stat-footer">
-          <span>▲ 24.8%</span>
-          <span style="color:#94a3b8;font-weight:normal;">vs last month</span>
+          <span>Verified Ledger</span>
+          <span style="color:#94a3b8;font-weight:normal;">from admissions</span>
         </div>
       </div>
 
@@ -184,10 +189,10 @@ function renderDashboardTab() {
           <span>Enrolled Students</span>
           <span class="stat-icon">👥</span>
         </div>
-        <div class="stat-value">26,750+</div>
+        <div class="stat-value">${store.students.length}</div>
         <div class="stat-footer">
-          <span>▲ 180+</span>
-          <span style="color:#94a3b8;font-weight:normal;">new this week</span>
+          <span>${store.students.length} Total</span>
+          <span style="color:#94a3b8;font-weight:normal;">active admissions</span>
         </div>
       </div>
 
@@ -204,12 +209,12 @@ function renderDashboardTab() {
 
       <div class="stat-card" style="--stat-color: #ec4899;">
         <div class="stat-header">
-          <span>PDF Notes Downloads</span>
+          <span>Study Notes & Handouts</span>
           <span class="stat-icon">📑</span>
         </div>
-        <div class="stat-value">10,920</div>
+        <div class="stat-value">${totalNotes}</div>
         <div class="stat-footer" style="color: #a78bfa;">
-          <span>Across ${totalNotes} resources</span>
+          <span>Syllabus & Grammar Handouts</span>
         </div>
       </div>
     </div>
@@ -294,7 +299,15 @@ function renderDashboardTab() {
             </tr>
           </thead>
           <tbody>
-            ${store.students.slice(0, 5).map(s => `
+            ${store.students.length === 0 ? `
+              <tr>
+                <td colspan="6" style="text-align:center; padding:32px 16px; color:#94a3b8;">
+                  <div style="font-size:22px; margin-bottom:6px;">👥</div>
+                  <div style="font-size:13px; font-weight:600; color:#cbd5e1;">No Student Admissions Yet</div>
+                  <div style="font-size:11px; color:#64748b; margin-top:2px;">Real student enrollments will appear here automatically when students enroll.</div>
+                </td>
+              </tr>
+            ` : store.students.slice(0, 5).map(s => `
               <tr>
                 <td style="font-weight:700; color:#fff;">${s.name}</td>
                 <td style="font-size:12px; color:#94a3b8;">${s.phone}<br/>${s.email}</td>
@@ -894,38 +907,66 @@ function renderStudentsTab() {
         <div>
           <h2 class="admin-card-title">Registered Students & Admissions</h2>
           <p style="font-size:12px; color:#94a3b8; margin-top:3px;">
-            Complete list of students who tapped "Buy Now" and completed enrollment.
+            Verified admissions recorded from online student enrollments & offline coaching admissions.
           </p>
         </div>
-        <button class="admin-btn-secondary" id="btn-export-students">
-          <span>📥</span>
-          <span>Export CSV</span>
-        </button>
+        <div style="display:flex; gap:10px;">
+          <button class="admin-btn-primary" id="btn-add-student-modal">
+            <span>+</span>
+            <span>Register Offline Student</span>
+          </button>
+          <button class="admin-btn-secondary" id="btn-export-students">
+            <span>📥</span>
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
 
       <div class="admin-table-wrapper">
         <table class="admin-table">
           <thead>
             <tr>
+              <th>Receipt No</th>
               <th>Student Name</th>
-              <th>Phone Number</th>
-              <th>Email</th>
-              <th>Enrolled Course</th>
+              <th>Contact Details</th>
+              <th>Enrolled Batch</th>
               <th>Fee Paid</th>
-              <th>Registration Date</th>
+              <th>Admission Date</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            ${store.students.map(s => `
+            ${store.students.length === 0 ? `
               <tr>
+                <td colspan="8" style="text-align:center; padding:48px 16px; color:#94a3b8;">
+                  <div style="font-size:32px; margin-bottom:8px;">👥</div>
+                  <div style="font-size:15px; font-weight:700; color:#e2e8f0;">No Registered Students Yet</div>
+                  <div style="font-size:12px; color:#64748b; margin-top:4px;">When students sign in with Google and complete batch enrollment, their verified records and digital fee receipts will appear here automatically.</div>
+                  <div style="margin-top:16px;">
+                    <button class="admin-btn-primary" id="btn-add-first-student" style="display:inline-flex;">
+                      <span>+ Record Offline Admission</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ` : store.students.map(s => `
+              <tr>
+                <td style="font-family:monospace; font-weight:700; color:#ffb800; font-size:12px;">${s.receiptNo || 'SSE-REC-AUTO'}</td>
                 <td style="font-weight:700; color:#fff;">${s.name}</td>
-                <td style="color:#94a3b8;">${s.phone}</td>
-                <td style="color:#94a3b8;">${s.email}</td>
+                <td style="font-size:12px; color:#94a3b8;">
+                  ${s.phone ? `<div>📞 ${s.phone}</div>` : ''}
+                  <div>✉️ ${s.email}</div>
+                </td>
                 <td style="color:#60a5fa; font-weight:600;">${s.course}</td>
-                <td style="font-weight:800; color:#10b981;">₹${s.amount}</td>
+                <td style="font-weight:800; color:#10b981;">₹${Number(s.amount).toLocaleString('en-IN')}</td>
                 <td style="font-size:12px; color:#94a3b8;">${s.date}</td>
-                <td><span class="badge-status active">${s.status}</span></td>
+                <td><span class="badge-status active">${s.status || 'Verified'}</span></td>
+                <td>
+                  <button class="admin-btn-secondary" data-action="view-student-receipt" data-id="${s.id || s.receiptNo}" style="font-size:11.5px; padding:4px 10px;">
+                    📄 Receipt
+                  </button>
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -1059,10 +1100,12 @@ function attachAdminEvents(containerElement, onSwitchToApp, onSwitchToSplit, upd
 
   // Delete course action
   containerElement.querySelectorAll('[data-action="delete-course"]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
       if (confirm('Are you sure you want to delete this course from the app?')) {
-        store.deleteCourse(id);
+        btn.textContent = '⏳ Deleting...';
+        await store.deleteCourse(id);
+        update();
       }
     });
   });
@@ -1080,10 +1123,12 @@ function attachAdminEvents(containerElement, onSwitchToApp, onSwitchToSplit, upd
 
   // Delete banner action
   containerElement.querySelectorAll('[data-action="delete-banner"]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
       if (confirm('Delete this 16:9 launch banner from the home carousel?')) {
-        store.deleteBanner(id);
+        btn.textContent = '⏳ Deleting...';
+        await store.deleteBanner(id);
+        update();
       }
     });
   });
@@ -1194,11 +1239,68 @@ function attachAdminEvents(containerElement, onSwitchToApp, onSwitchToSplit, upd
     });
   });
 
-  // Export CSV
+  // Cloud Sync live database
+  const btnCloudSync = containerElement.querySelector('#btn-admin-cloud-sync');
+  if (btnCloudSync) {
+    btnCloudSync.addEventListener('click', async () => {
+      btnCloudSync.textContent = '⏳ Syncing...';
+      await store.init();
+      await store.fetchRealStudents();
+      update();
+      alert('Cloud Database refreshed successfully from Supabase!');
+    });
+  }
+
+  // Register Offline Student Admission Triggers
+  const btnAddStudent = containerElement.querySelector('#btn-add-student-modal');
+  if (btnAddStudent) {
+    btnAddStudent.addEventListener('click', () => {
+      openAddStudentAdmissionModal();
+    });
+  }
+
+  const btnAddFirstStudent = containerElement.querySelector('#btn-add-first-student');
+  if (btnAddFirstStudent) {
+    btnAddFirstStudent.addEventListener('click', () => {
+      openAddStudentAdmissionModal();
+    });
+  }
+
+  // View Official Fee Receipt
+  containerElement.querySelectorAll('[data-action="view-student-receipt"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const studentId = btn.getAttribute('data-id');
+      openStudentReceiptModal(studentId);
+    });
+  });
+
+  // Export Genuine CSV
   const btnExport = containerElement.querySelector('#btn-export-students');
   if (btnExport) {
     btnExport.addEventListener('click', () => {
-      alert('Exported students record to smart_study_students.csv');
+      if (!store.students.length) {
+        alert('No registered student records to export yet.');
+        return;
+      }
+      const headers = ['Receipt No', 'Student Name', 'Phone', 'Email', 'Batch', 'Amount (INR)', 'Date', 'Status'];
+      const rows = store.students.map(s => [
+        `"${s.receiptNo || ''}"`,
+        `"${s.name || ''}"`,
+        `"${s.phone || ''}"`,
+        `"${s.email || ''}"`,
+        `"${s.course || ''}"`,
+        s.amount || 0,
+        `"${s.date || ''}"`,
+        `"${s.status || ''}"`
+      ]);
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `smart_study_admissions_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     });
   }
 
@@ -1849,5 +1951,215 @@ function openAddResourceModal(courseId, subjectId, chapterId, resourceType) {
 
     store.addResource(courseId, subjectId, chapterId, resourceType, resData);
     close();
+  });
+}
+
+// 8. Register Offline Student Admission Modal
+function openAddStudentAdmissionModal() {
+  const root = document.getElementById('admin-modals-root');
+  if (!root) return;
+
+  root.innerHTML = `
+    <div class="admin-modal-backdrop open">
+      <div class="admin-modal-box" style="max-width:520px;">
+        <div class="admin-modal-header">
+          <h3 class="admin-modal-title">Register Offline / Cash Student Admission</h3>
+          <button class="admin-modal-close" id="btn-close-adm">✕</button>
+        </div>
+        <form id="form-add-student-admission">
+          <div class="admin-modal-body">
+            <div class="form-group">
+              <label class="form-label">Student Full Name</label>
+              <input type="text" id="adm-name" class="form-input" placeholder="e.g. Ramesh Kumar" required />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" id="adm-phone" class="form-input" placeholder="+91 98765 43210" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" id="adm-email" class="form-input" placeholder="student@gmail.com" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Enroll In Batch / Course</label>
+              <select id="adm-course" class="form-select" required>
+                ${store.courses.map(c => `
+                  <option value="${c.id}" data-title="${c.title}" data-price="${c.discountPrice || c.originalPrice}">
+                    ${c.title} (₹${c.discountPrice || c.originalPrice})
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Fee Paid / Collected (₹)</label>
+              <input type="number" id="adm-amount" class="form-input" value="${store.courses[0] ? (store.courses[0].discountPrice || 999) : 999}" required />
+            </div>
+          </div>
+          <div class="admin-modal-footer">
+            <button type="button" class="admin-btn-secondary" id="btn-cancel-adm">Cancel</button>
+            <button type="submit" class="admin-btn-primary">Generate Admission & Receipt</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  const close = () => { root.innerHTML = ''; };
+  document.getElementById('btn-close-adm')?.addEventListener('click', close);
+  document.getElementById('btn-cancel-adm')?.addEventListener('click', close);
+
+  // Update amount when course changes
+  document.getElementById('adm-course')?.addEventListener('change', (e) => {
+    const opt = e.target.selectedOptions[0];
+    const price = opt?.getAttribute('data-price');
+    if (price) {
+      document.getElementById('adm-amount').value = price;
+    }
+  });
+
+  document.getElementById('form-add-student-admission')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('adm-name').value.trim();
+    const phone = document.getElementById('adm-phone').value.trim();
+    const email = document.getElementById('adm-email').value.trim();
+    const courseSelect = document.getElementById('adm-course');
+    const courseId = courseSelect.value;
+    const courseTitle = courseSelect.selectedOptions[0]?.getAttribute('data-title') || 'Enrolled Course';
+    const amount = Number(document.getElementById('adm-amount').value) || 0;
+
+    if (!name || !email) return;
+
+    const newAdmission = await store.addStudentAdmission({
+      name,
+      phone,
+      email,
+      courseId,
+      courseTitle,
+      amount
+    });
+
+    close();
+    openStudentReceiptModal(newAdmission.receiptNo);
+  });
+}
+
+// 9. Official Printable Student Fee Receipt Modal
+function openStudentReceiptModal(idOrReceiptNo) {
+  const root = document.getElementById('admin-modals-root');
+  if (!root) return;
+
+  const s = store.students.find(st => st.id === idOrReceiptNo || st.receiptNo === idOrReceiptNo) || store.students[0];
+  if (!s) {
+    alert('Student admission record not found.');
+    return;
+  }
+
+  const settings = store.settings;
+
+  root.innerHTML = `
+    <div class="admin-modal-backdrop open">
+      <div class="admin-modal-box" style="max-width:540px; background:#ffffff; color:#0f172a; padding:0; overflow:hidden;">
+        <div style="background:#1340b5; color:#ffffff; padding:18px 22px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:36px; height:36px; border-radius:50%; background:#ffb800; color:#1340b5; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:18px;">🎓</div>
+            <div>
+              <div style="font-size:16px; font-weight:900; letter-spacing:-0.2px;">${settings.coachingName}</div>
+              <div style="font-size:11px; opacity:0.9;">Official Admission & Fee Receipt</div>
+            </div>
+          </div>
+          <button class="admin-modal-close" id="btn-close-receipt-modal" style="color:#ffffff; font-size:18px; border:none; background:none; cursor:pointer;">✕</button>
+        </div>
+
+        <div style="padding:22px;">
+          <!-- Top Receipt Meta -->
+          <div style="display:flex; justify-content:space-between; border-bottom:1px solid #e2e8f0; padding-bottom:14px; margin-bottom:14px; font-size:12px;">
+            <div>
+              <div style="color:#64748b;">Receipt Number:</div>
+              <div style="font-family:monospace; font-weight:800; color:#1340b5; font-size:14px;">${s.receiptNo || 'SSE-REC-AUTO'}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="color:#64748b;">Date of Admission:</div>
+              <div style="font-weight:700; color:#0f172a;">${s.date}</div>
+            </div>
+          </div>
+
+          <!-- Student & Course Details -->
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:14px; margin-bottom:16px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12.5px;">
+              <div>
+                <span style="color:#64748b;">Student Name:</span>
+                <div style="font-weight:800; color:#0f172a;">${s.name}</div>
+              </div>
+              <div>
+                <span style="color:#64748b;">Contact:</span>
+                <div style="font-weight:700; color:#0f172a;">${s.phone || 'N/A'}</div>
+              </div>
+              <div>
+                <span style="color:#64748b;">Email:</span>
+                <div style="font-weight:600; color:#0f172a; word-break:break-all;">${s.email}</div>
+              </div>
+              <div>
+                <span style="color:#64748b;">Status:</span>
+                <div style="font-weight:800; color:#10b981;">✓ ${s.status || 'Verified Admission'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Course & Payment Breakdown -->
+          <div style="border:1px solid #e2e8f0; border-radius:10px; overflow:hidden; margin-bottom:16px;">
+            <div style="background:#f1f5f9; padding:8px 12px; font-size:12px; font-weight:700; color:#475569; display:flex; justify-content:space-between;">
+              <span>Enrolled Batch</span>
+              <span>Amount</span>
+            </div>
+            <div style="padding:12px; display:flex; justify-content:space-between; align-items:center; font-size:13px; border-bottom:1px solid #f1f5f9;">
+              <div>
+                <strong style="color:#1340b5;">${s.course}</strong>
+                <div style="font-size:11px; color:#64748b;">Complete Syllabus + Live Classes + Notes</div>
+              </div>
+              <strong style="font-size:15px; color:#0f172a;">₹${Number(s.amount).toLocaleString('en-IN')}</strong>
+            </div>
+            <div style="background:#f8fafc; padding:10px 12px; display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+              <span style="font-weight:700; color:#0f172a;">Total Fee Paid:</span>
+              <span style="font-size:16px; font-weight:900; color:#10b981;">₹${Number(s.amount).toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+
+          <!-- Institute Footer Stamp -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; font-size:11px; color:#64748b; border-top:1px dashed #cbd5e1; padding-top:12px;">
+            <div>
+              <strong>${settings.coachingName}</strong><br/>
+              ${settings.address}<br/>
+              Lead Faculty: <strong>Krishna Kumar</strong>
+            </div>
+            <div style="text-align:right;">
+              <div style="display:inline-block; border:1px solid #10b981; color:#10b981; font-weight:800; padding:2px 8px; border-radius:4px; margin-bottom:4px;">
+                SEAL OF ADMISSION
+              </div>
+              <div>Digitally Generated</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#f8fafc; border-top:1px solid #e2e8f0; padding:12px 20px; display:flex; justify-content:space-between; align-items:center;">
+          <button type="button" class="admin-btn-secondary" id="btn-close-receipt-bottom" style="background:#e2e8f0; color:#0f172a; border:none; cursor:pointer;">Close</button>
+          <button type="button" class="admin-btn-primary" id="btn-print-student-receipt" style="background:#1340b5; cursor:pointer;">
+            <span>🖨️</span>
+            <span>Print Receipt</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const close = () => { root.innerHTML = ''; };
+  document.getElementById('btn-close-receipt-modal')?.addEventListener('click', close);
+  document.getElementById('btn-close-receipt-bottom')?.addEventListener('click', close);
+  document.getElementById('btn-print-student-receipt')?.addEventListener('click', () => {
+    window.print();
   });
 }

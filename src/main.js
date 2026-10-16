@@ -1,5 +1,6 @@
 import './style.css';
 import { store } from './data/store.js';
+import { authService } from './data/auth.js';
 import { renderAdminPanel } from './admin/admin.js';
 import { SecureVideoPlayer, extractYouTubeId } from './player/securePlayer.js';
 
@@ -86,21 +87,24 @@ function renderMobileSimulator(root) {
   });
 }
 
-// Production Quick Actions (Exact clean 12 items - "Student Profile" removed from Home per user instruction)
-const quickActionsData = [
-  { id: 'all-courses', label: 'All Courses', icon: '🎓', bg: '#EEF2FF', color: '#4338CA' },
-  { id: 'my-courses', label: 'My Batches', icon: '📚', bg: '#EFF6FF', color: '#1D4ED8', badge: '2 ENROLLED' },
-  { id: 'live-classes', label: 'Live Classes', icon: '📡', bg: '#FFE4E6', color: '#E11D48', isLive: true },
-  { id: 'free-content', label: 'Free Content', icon: '🎁', bg: '#FEF3C7', color: '#B45309', badge: 'FREE' },
-  { id: 'test-series', label: 'Test Series', icon: '📝', bg: '#F3E8FF', color: '#7E22CE' },
-  { id: 'paid-notes', label: 'Paid Notes', icon: '📑', bg: '#ECFDF5', color: '#047857' },
-  { id: 'free-notes', label: 'Free Notes', icon: '📄', bg: '#F0FDF4', color: '#15803D' },
-  { id: 'free-videos', label: 'Free Videos', icon: '🎬', bg: '#FFF1F2', color: '#BE123C' },
-  { id: 'youtube', label: 'YouTube', icon: '▶️', bg: '#FFEEEE', color: '#FF0000' },
-  { id: 'instagram', label: 'Instagram', icon: '📸', bg: '#FDF2F8', color: '#C13584' },
-  { id: 'whatsapp', label: 'WhatsApp', icon: '💬', bg: '#F0FDF4', color: '#25D366' },
-  { id: 'share-app', label: 'Share App', icon: '🚀', bg: '#F8FAFC', color: '#334155' }
-];
+// Production Quick Actions (Exact clean 12 items with real-time enrollment badge)
+function getQuickActionsData() {
+  const enrolledCount = store.getUserEnrolledCourses().length;
+  return [
+    { id: 'all-courses', label: 'All Courses', icon: '🎓', bg: '#EEF2FF', color: '#4338CA' },
+    { id: 'my-courses', label: 'My Batches', icon: '📚', bg: '#EFF6FF', color: '#1D4ED8', badge: enrolledCount > 0 ? `${enrolledCount} ENROLLED` : '' },
+    { id: 'live-classes', label: 'Live Classes', icon: '📡', bg: '#FFE4E6', color: '#E11D48', isLive: true },
+    { id: 'free-content', label: 'Free Content', icon: '🎁', bg: '#FEF3C7', color: '#B45309', badge: 'FREE' },
+    { id: 'test-series', label: 'Test Series', icon: '📝', bg: '#F3E8FF', color: '#7E22CE' },
+    { id: 'paid-notes', label: 'Paid Notes', icon: '📑', bg: '#ECFDF5', color: '#047857' },
+    { id: 'free-notes', label: 'Free Notes', icon: '📄', bg: '#F0FDF4', color: '#15803D' },
+    { id: 'free-videos', label: 'Free Videos', icon: '🎬', bg: '#FFF1F2', color: '#BE123C' },
+    { id: 'youtube', label: 'YouTube', icon: '▶️', bg: '#FFEEEE', color: '#FF0000' },
+    { id: 'instagram', label: 'Instagram', icon: '📸', bg: '#FDF2F8', color: '#C13584' },
+    { id: 'whatsapp', label: 'WhatsApp', icon: '💬', bg: '#F0FDF4', color: '#25D366' },
+    { id: 'share-app', label: 'Share App', icon: '🚀', bg: '#F8FAFC', color: '#334155' }
+  ];
+}
 
 // Notes list data
 const studyNotesList = [
@@ -244,6 +248,68 @@ function renderMobileInside(container, isSplit) {
         </div>
       </div>
 
+      <!-- Supabase Auth / Google Sign-In Modal -->
+      <!-- Supabase Auth / Google Sign-In Modal (Google Only) -->
+      <div class="modal-backdrop" id="auth-modal">
+        <div class="bottom-sheet" style="max-height:85%; padding:22px 18px 28px;">
+          <div class="sheet-drag-handle"></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div style="width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, #1340b5, #1d4ed8); display:flex; align-items:center; justify-content:center; color:#fff; font-size:17px;">🎓</div>
+              <div>
+                <div style="font-size:15px; font-weight:800; color:#0f172a;">${settings.coachingName}</div>
+                <div style="font-size:11px; color:#64748b;">Official Student Portal</div>
+              </div>
+            </div>
+            <button class="sheet-close-btn" id="close-auth-modal-btn">✕</button>
+          </div>
+
+          <div style="text-align:center; padding:10px 4px 18px;">
+            <div style="width:52px; height:52px; border-radius:50%; background:#eff6ff; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; border:1px solid #bfdbfe;">
+              <svg width="26" height="26" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+            </div>
+            <div style="font-size:19px; font-weight:900; color:#0f172a; letter-spacing:-0.2px;">Sign In with Google</div>
+            <div style="font-size:12.5px; color:#64748b; margin-top:6px; line-height:1.5;">
+              Sign in with your Google account for instant verified access to your courses, video lectures, downloadable notes, and student roll ID.
+            </div>
+          </div>
+
+          <div id="auth-status-message" style="display:none; padding:12px 14px; border-radius:12px; font-size:12.5px; margin-bottom:16px; text-align:center;"></div>
+
+          <!-- PRIMARY SOLE ACTION: GOOGLE SIGN IN -->
+          <button class="google-signin-btn" id="btn-google-signin" style="width:100%; height:52px; font-size:15px; font-weight:700; box-shadow:0 4px 14px rgba(0,0,0,0.08); border-radius:14px; display:flex; align-items:center; justify-content:center; gap:12px; border:1px solid #dadce0; background:#ffffff; color:#3c4043; cursor:pointer; transition:all 0.2s ease;">
+            <svg class="google-logo-svg" style="width:22px; height:22px;" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+            <span>Continue with Google</span>
+          </button>
+
+          <!-- Security Badges -->
+          <div style="margin-top:18px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:#475569;">
+              <span style="color:#10b981; font-weight:bold;">✓</span>
+              <span>1-Tap Instant Sign-In — No passwords to remember</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:#475569;">
+              <span style="color:#10b981; font-weight:bold;">✓</span>
+              <span>Automatic verified Student ID & Enrollment sync</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; font-size:11.5px; color:#475569;">
+              <span style="color:#10b981; font-weight:bold;">✓</span>
+              <span>Secured by Google OAuth & Supabase Database</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Verified Student Fee Receipt Modal -->
       <div class="modal-backdrop" id="fee-receipt-modal">
         <div class="bottom-sheet" style="max-height:92%;">
@@ -268,27 +334,27 @@ function renderMobileInside(container, isSplit) {
             <div style="display:flex; flex-direction:column; gap:5px;">
               <div class="receipt-row">
                 <span class="receipt-label">Receipt Number:</span>
-                <span class="receipt-value" style="font-family:monospace; color:#1340b5;">SSE-REC-2026-0428</span>
+                <span class="receipt-value" style="font-family:monospace; color:#1340b5;" id="receipt-modal-num">SSE-REC-2026-0001</span>
               </div>
               <div class="receipt-row">
                 <span class="receipt-label">Student Name:</span>
-                <span class="receipt-value">Aman Sharma</span>
+                <span class="receipt-value" id="receipt-modal-name">Verified Student</span>
               </div>
               <div class="receipt-row">
                 <span class="receipt-label">Roll ID:</span>
-                <span class="receipt-value" style="font-weight:800;">SSE-2026-8492</span>
+                <span class="receipt-value" style="font-weight:800;" id="receipt-modal-roll">SSE-2026-ACTIVE</span>
               </div>
               <div class="receipt-row">
                 <span class="receipt-label">Enrolled Batches:</span>
-                <span class="receipt-value">Spoken English + SSC English 2026</span>
+                <span class="receipt-value" id="receipt-modal-batches">All Active Batches</span>
               </div>
               <div class="receipt-row">
                 <span class="receipt-label">Admission Mode:</span>
-                <span class="receipt-value">Offline Classroom + App Access</span>
+                <span class="receipt-value">Online App Access + Offline Support</span>
               </div>
               <div class="receipt-row">
                 <span class="receipt-label">Admission Date:</span>
-                <span class="receipt-value">12 Jan 2026</span>
+                <span class="receipt-value" id="receipt-modal-date">Academic Session 2026</span>
               </div>
               <div class="receipt-row">
                 <span class="receipt-label">Validity Period:</span>
@@ -296,11 +362,11 @@ function renderMobileInside(container, isSplit) {
               </div>
               <div class="receipt-row">
                 <span class="receipt-label">Payment Mode:</span>
-                <span class="receipt-value">UPI (Ref: 401829482910)</span>
+                <span class="receipt-value">Online Direct Enrollment</span>
               </div>
               <div class="receipt-row" style="background:#f0fdf4; padding:8px 10px; border-radius:8px; margin-top:6px; border:1px solid #bbf7d0;">
-                <span class="receipt-label" style="color:#166534; font-weight:800; font-size:13px;">Total Fee Paid:</span>
-                <span class="receipt-value" style="color:#166534; font-weight:900; font-size:16px;">₹2,499.00 (PAID)</span>
+                <span class="receipt-label" style="color:#166534; font-weight:800; font-size:13px;">Fee Status:</span>
+                <span class="receipt-value" style="color:#166534; font-weight:900; font-size:15px;" id="receipt-modal-amount">VERIFIED & ENROLLED</span>
               </div>
             </div>
 
@@ -388,7 +454,7 @@ function switchStudentTab(container, tabName) {
   const notifications = store.notifications;
 
   if (tabName === 'home') {
-    screenContent.innerHTML = renderHomeScreenHtml(settings, courses, banners, notifications, quickActionsData);
+    screenContent.innerHTML = renderHomeScreenHtml(settings, courses, banners, notifications, getQuickActionsData());
     attachHomeInteractions(container);
   } else if (tabName === 'batches') {
     screenContent.innerHTML = renderMyBatchesScreenHtml(settings, courses);
@@ -410,6 +476,12 @@ function switchStudentTab(container, tabName) {
 // 1. HOME SCREEN HTML
 // ========================================================
 function renderHomeScreenHtml(settings, courses, banners, notifications, quickActions) {
+  const currentUser = authService.getCurrentUser();
+  const firstName = currentUser ? currentUser.fullName.split(' ')[0] : 'Student';
+  const greetingSubtitle = currentUser 
+    ? `Roll ID: ${currentUser.rollId} • Guided by Krishna Kumar Sir`
+    : `Join Krishna Kumar Sir • Learn • Practice • Master`;
+
   return `
     <!-- UNIFIED HEADER BOX -->
     <div class="unified-header-box">
@@ -422,18 +494,36 @@ function renderHomeScreenHtml(settings, courses, banners, notifications, quickAc
           </div>
         </div>
 
-        <button class="notification-bell-btn" id="bell-btn" aria-label="Notifications">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          ${notifications.length > 0 ? `<div class="notification-badge">${notifications.length}</div>` : ''}
-        </button>
+        <div style="display:flex; align-items:center; gap:8px;">
+          ${currentUser ? `
+            <div class="header-user-avatar" id="header-avatar-btn" title="View Profile (${currentUser.fullName})">
+              ${currentUser.avatarUrl ? `<img src="${currentUser.avatarUrl}" alt="${currentUser.fullName}" />` : currentUser.fullName.slice(0, 2).toUpperCase()}
+            </div>
+          ` : `
+            <button class="header-signin-badge" id="header-signin-btn" title="Sign In with Google" style="cursor:pointer; display:flex; align-items:center; gap:6px; background:#ffffff; color:#1e293b; border:1px solid #cbd5e1; padding:6px 11px; border-radius:20px; font-weight:700; font-size:11.5px; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+              <svg width="13" height="13" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+              </svg>
+              <span>Sign In</span>
+            </button>
+          `}
+
+          <button class="notification-bell-btn" id="bell-btn" aria-label="Notifications">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            ${notifications.length > 0 ? `<div class="notification-badge">${notifications.length}</div>` : ''}
+          </button>
+        </div>
       </div>
 
       <div class="header-greeting">
-        <div class="greeting-title">Hello, Aman 👋</div>
-        <div class="greeting-subtitle">Continue your English learning with Krishna Kumar Sir</div>
+        <div class="greeting-title">Hello, ${firstName} 👋</div>
+        <div class="greeting-subtitle">${greetingSubtitle}</div>
       </div>
 
       <button class="search-course-btn" id="search-bar-btn">
@@ -526,36 +616,54 @@ function renderHomeScreenHtml(settings, courses, banners, notifications, quickAc
       </div>
 
       <div class="horizontal-scroll-container" id="courses-scroll-container">
-        ${courses.map((c) => `
-          <div class="course-card-box" data-course-id="${c.id}">
-            <div class="course-thumb-wrapper">
-              <img src="${c.image}" alt="${c.title}" class="course-thumb-img" />
-              <div class="course-category-tag">${c.category}</div>
-              <div class="course-discount-tag">${c.discountPercent}% OFF</div>
+        ${courses.map((c) => {
+          const isEnrolled = store.isCourseEnrolled(c.id);
+          return `
+            <div class="course-card-box" data-course-id="${c.id}">
+              <div class="course-thumb-wrapper">
+                <img src="${c.image}" alt="${c.title}" class="course-thumb-img" />
+                <div class="course-category-tag">${c.category}</div>
+                <div class="course-discount-tag">${c.discountPercent}% OFF</div>
+              </div>
+
+              <div class="course-card-content">
+                <div class="course-meta-row">
+                  <div class="course-rating">★ ${c.rating || '5.0'} <span style="color:#64748b;font-weight:normal">(${c.students || '1k+'})</span></div>
+                  <div class="course-date-badge">${c.batchDate}</div>
+                </div>
+
+                <div class="course-card-title">${c.title}</div>
+                <div class="course-card-faculty">By ${c.faculty}</div>
+
+                <div class="course-card-pricing">
+                  ${isEnrolled ? `
+                    <span class="price-discounted" style="color:#10b981; font-weight:800; font-size:13px;">✓ ENROLLED</span>
+                    <span style="font-size:11px; color:#166534; font-weight:600;">Full Access</span>
+                  ` : c.isFree ? `
+                    <span class="price-discounted" style="color:#10b981; font-weight:900;">FREE BATCH</span>
+                    <span style="font-size:11px; color:#10b981; font-weight:700;">● 100% Free</span>
+                  ` : `
+                    <span class="price-discounted">₹${c.discountPrice}</span>
+                    <span class="price-original">₹${c.originalPrice}</span>
+                    <span class="price-save-badge">Save ₹${c.originalPrice - c.discountPrice}</span>
+                  `}
+                </div>
+
+                <div class="course-card-actions">
+                  ${isEnrolled ? `
+                    <button class="btn-buy-now" data-action="view-details" data-course-id="${c.id}" style="width:100%; background:#10b981; border:none; height:38px; border-radius:10px; font-weight:800; color:#fff; cursor:pointer;">
+                      ▶ Continue Learning
+                    </button>
+                  ` : `
+                    <button class="btn-buy-now" data-action="view-details" data-course-id="${c.id}" style="width:100%; background:#1340b5; border:none; height:38px; border-radius:10px; font-weight:800; color:#fff; cursor:pointer;">
+                      ⚡ View Batch & Enroll →
+                    </button>
+                  `}
+                </div>
+              </div>
             </div>
-
-            <div class="course-card-content">
-              <div class="course-meta-row">
-                <div class="course-rating">★ ${c.rating || '5.0'} <span style="color:#64748b;font-weight:normal">(${c.students || '1k+'})</span></div>
-                <div class="course-date-badge">${c.batchDate}</div>
-              </div>
-
-              <div class="course-card-title">${c.title}</div>
-              <div class="course-card-faculty">By ${c.faculty}</div>
-
-              <div class="course-card-pricing">
-                <span class="price-discounted" style="color:#10b981; font-weight:900;">100% FREE</span>
-                <span style="font-size:11px; color:#10b981; font-weight:700;">● Free Batch</span>
-              </div>
-
-              <div class="course-card-actions">
-                <button class="btn-buy-now" data-action="view-details" data-course-id="${c.id}" style="width:100%; background:#10b981; border:none; height:38px; border-radius:10px; font-weight:800; color:#fff; cursor:pointer;">
-                  ⚡ Enter Batch (Free) →
-                </button>
-              </div>
-            </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     </div>
 
@@ -633,21 +741,51 @@ function renderHomeScreenHtml(settings, courses, banners, notifications, quickAc
 // 2. MY BATCHES SCREEN HTML
 // ========================================================
 function renderMyBatchesScreenHtml(settings, courses) {
-  const activeBatches = courses || [];
+  const currentUser = authService.getCurrentUser();
+  const activeBatches = store.getUserEnrolledCourses();
+
+  if (!currentUser) {
+    return `
+      <div class="subpage-header">
+        <div class="subpage-title-row">
+          <div class="subpage-title">My Batches & Learning 📚</div>
+        </div>
+        <div class="subpage-subtitle">Sign in with Google to view your enrolled courses & video classes</div>
+      </div>
+
+      <div style="margin:24px 16px; padding:32px 18px; background:#ffffff; border:1px solid #e2e8f0; border-radius:20px; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.03);">
+        <div style="width:60px; height:60px; border-radius:50%; background:#eff6ff; display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 12px;">🔐</div>
+        <div style="font-size:17px; font-weight:900; color:#0f172a;">Student Login Required</div>
+        <div style="font-size:12.5px; color:#64748b; margin:6px auto 18px; max-width:280px; line-height:1.45;">
+          Please sign in with your Google account to access your active batches, video lectures, and study notes.
+        </div>
+        <button class="google-signin-btn" id="batches-google-login-btn">
+          <svg class="google-logo-svg" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Sign In with Google</span>
+        </button>
+      </div>
+    `;
+  }
+
   return `
     <div class="subpage-header">
       <div class="subpage-title-row">
         <div class="subpage-title">My Batches & Learning 📚</div>
         <div style="background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; color:#fff;">
-          ${activeBatches.length} ACTIVE (100% FREE)
+          ${activeBatches.length} ACTIVE
         </div>
       </div>
-      <div class="subpage-subtitle">Enrolled Student: Aman Sharma • All Batches Unlocked for Testing</div>
+      <div class="subpage-subtitle">Enrolled Student: ${currentUser.fullName} (${currentUser.rollId})</div>
     </div>
 
     <!-- Batch Filter Pills -->
     <div class="batch-filter-pills" id="batch-filter-pills">
-      <button class="batch-pill-btn active" data-filter="all">All Free Batches (${activeBatches.length})</button>
+      <button class="batch-pill-btn active" data-filter="all">All Enrolled (${activeBatches.length})</button>
       <button class="batch-pill-btn" data-filter="Spoken English">Spoken English</button>
       <button class="batch-pill-btn" data-filter="Govt Exams">Govt Exams</button>
       <button class="batch-pill-btn" data-filter="Grammar & Writing">Grammar & Writing</button>
@@ -655,75 +793,80 @@ function renderMyBatchesScreenHtml(settings, courses) {
       <button class="batch-pill-btn" data-filter="notes">Study Notes</button>
     </div>
 
-    <!-- Faculty Announcement Notice -->
-    <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:14px; margin:0 16px 14px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start;">
-      <span style="font-size:18px;">📢</span>
-      <div style="font-size:12px; color:#1e3a8a; line-height:1.45;">
-        <strong>Teacher's Announcement:</strong> All batches are currently <strong>100% Free</strong>! Click any batch card below to test the full-screen layout, vertical syllabus, video lectures, PDF notes, and practice tests.
-        <div style="margin-top:3px; font-weight:700; color:#1d4ed8;">— Krishna Kumar Sir (Smart Study English Classes)</div>
+    ${activeBatches.length === 0 ? `
+      <!-- Empty Batches State -->
+      <div style="margin:20px 16px; padding:32px 18px; background:#ffffff; border:1px solid #e2e8f0; border-radius:20px; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,0.03);">
+        <div style="width:60px; height:60px; border-radius:50%; background:#f0fdf4; display:flex; align-items:center; justify-content:center; font-size:28px; margin:0 auto 12px;">🎓</div>
+        <div style="font-size:17px; font-weight:900; color:#0f172a;">No Active Batches Enrolled</div>
+        <div style="font-size:12.5px; color:#64748b; margin:6px auto 18px; max-width:280px; line-height:1.45;">
+          You haven't enrolled in any course yet. Explore our featured Spoken English and Competitive Exam courses to begin learning!
+        </div>
+        <button id="btn-browse-courses-cta" style="background:#1340b5; color:#fff; border:none; padding:12px 24px; border-radius:12px; font-size:13.5px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(19,64,181,0.25);">
+          ⚡ Browse All Courses
+        </button>
       </div>
-    </div>
+    ` : `
+      <!-- Dynamic Enrolled Batches List (Vertical) -->
+      <div style="display:flex; flex-direction:column; gap:14px; padding:0 16px 14px;" id="enrolled-batches-list">
+        ${activeBatches.map((c, idx) => {
+          const subCount = (c.subjects || []).length;
+          const totalLectures = (c.subjects || []).reduce((acc, s) => acc + (s.chapters || []).reduce((ca, ch) => ca + (ch.lectures || []).length, 0), 0);
+          const totalPdfs = (c.subjects || []).reduce((acc, s) => acc + (s.chapters || []).reduce((ca, ch) => ca + (ch.pdfs || []).length, 0), 0);
+          const totalPractices = (c.subjects || []).reduce((acc, s) => acc + (s.chapters || []).reduce((ca, ch) => ca + (ch.practices || []).length, 0), 0);
+          const progressPct = idx === 0 ? 64 : idx === 1 ? 38 : 20;
 
-    <!-- Dynamic Enrolled Free Batches List (Vertical) -->
-    <div style="display:flex; flex-direction:column; gap:14px; padding:0 16px 14px;" id="enrolled-batches-list">
-      ${activeBatches.map((c, idx) => {
-        const subCount = (c.subjects || []).length;
-        const totalLectures = (c.subjects || []).reduce((acc, s) => acc + (s.chapters || []).reduce((ca, ch) => ca + (ch.lectures || []).length, 0), 0);
-        const totalPdfs = (c.subjects || []).reduce((acc, s) => acc + (s.chapters || []).reduce((ca, ch) => ca + (ch.pdfs || []).length, 0), 0);
-        const totalPractices = (c.subjects || []).reduce((acc, s) => acc + (s.chapters || []).reduce((ca, ch) => ca + (ch.practices || []).length, 0), 0);
-        const progressPct = idx === 0 ? 64 : idx === 1 ? 38 : 20;
-
-        return `
-          <div class="enrolled-batch-card" data-category="${c.category}" data-course-id="${c.id}" style="margin:0; cursor:pointer;" title="Tap to open batch in full screen">
-            <div class="enrolled-batch-banner">
-              <img src="${c.image}" alt="${c.title}" />
-              <div style="position:absolute; top:10px; left:10px; background:rgba(19,64,181,0.92); color:#fff; font-size:10px; font-weight:800; padding:4px 8px; border-radius:6px; letter-spacing:0.4px;">
-                ${c.category.toUpperCase()}
-              </div>
-              <div style="position:absolute; bottom:10px; right:10px; background:#10b981; color:#fff; font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:6px; display:flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
-                <span>●</span> 100% FREE ACTIVE
-              </div>
-            </div>
-
-            <div class="enrolled-batch-content">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <div>
-                  <div style="font-size:15px; font-weight:800; color:#0f172a; line-height:1.3;">${c.title}</div>
-                  <div style="font-size:11.5px; color:#64748b; margin-top:2px;">Mentor: <strong>${c.faculty}</strong></div>
+          return `
+            <div class="enrolled-batch-card" data-category="${c.category}" data-course-id="${c.id}" style="margin:0; cursor:pointer;" title="Tap to open batch in full screen">
+              <div class="enrolled-batch-banner">
+                <img src="${c.image}" alt="${c.title}" />
+                <div style="position:absolute; top:10px; left:10px; background:rgba(19,64,181,0.92); color:#fff; font-size:10px; font-weight:800; padding:4px 8px; border-radius:6px; letter-spacing:0.4px;">
+                  ${c.category.toUpperCase()}
                 </div>
-                <span style="font-size:12px; font-weight:800; color:#10b981;">Free Access</span>
+                <div style="position:absolute; bottom:10px; right:10px; background:#10b981; color:#fff; font-size:10.5px; font-weight:800; padding:3px 8px; border-radius:6px; display:flex; align-items:center; gap:4px; box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+                  <span>●</span> ENROLLED & ACTIVE
+                </div>
               </div>
 
-              <!-- Progress Bar -->
-              <div class="batch-progress-wrapper" style="margin:8px 0 6px;">
-                <div class="batch-progress-fill" style="width: ${progressPct}%; background:#10b981;"></div>
-              </div>
+              <div class="enrolled-batch-content">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                  <div>
+                    <div style="font-size:15px; font-weight:800; color:#0f172a; line-height:1.3;">${c.title}</div>
+                    <div style="font-size:11.5px; color:#64748b; margin-top:2px;">Mentor: <strong>${c.faculty}</strong></div>
+                  </div>
+                  <span style="font-size:12px; font-weight:800; color:#10b981;">Full Access</span>
+                </div>
 
-              <div style="display:flex; justify-content:space-between; font-size:11px; color:#64748b; margin-bottom:10px;">
-                <span>📚 ${subCount} Subjects • 🎥 ${totalLectures} Lectures</span>
-                <span>📑 ${totalPdfs} Notes • 📝 ${totalPractices} Tests</span>
-              </div>
+                <!-- Progress Bar -->
+                <div class="batch-progress-wrapper" style="margin:8px 0 6px;">
+                  <div class="batch-progress-fill" style="width: ${progressPct}%; background:#10b981;"></div>
+                </div>
 
-              <!-- Action Buttons -->
-              <div class="batch-actions-grid">
-                <button class="batch-action-btn primary btn-enter-fullscreen-batch" data-course-id="${c.id}" style="background:#10b981; grid-column: span 2;">
-                  <span>⚡</span>
-                  <span>Enter Batch (Full Screen) →</span>
-                </button>
-                <button class="batch-action-btn secondary btn-view-syllabus" data-course-id="${c.id}">
-                  <span>📚</span>
-                  <span>Chapters (Vertical)</span>
-                </button>
-                <button class="batch-action-btn secondary btn-play-first-lecture" data-course-id="${c.id}">
-                  <span>▶</span>
-                  <span>Watch Video</span>
-                </button>
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:#64748b; margin-bottom:10px;">
+                  <span>📚 ${subCount} Subjects • 🎥 ${totalLectures} Lectures</span>
+                  <span>📑 ${totalPdfs} Notes • 📝 ${totalPractices} Tests</span>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="batch-actions-grid">
+                  <button class="batch-action-btn primary btn-enter-fullscreen-batch" data-course-id="${c.id}" style="background:#10b981; grid-column: span 2;">
+                    <span>⚡</span>
+                    <span>Continue Learning (Full Screen) →</span>
+                  </button>
+                  <button class="batch-action-btn secondary btn-view-syllabus" data-course-id="${c.id}">
+                    <span>📚</span>
+                    <span>Chapters</span>
+                  </button>
+                  <button class="batch-action-btn secondary btn-play-first-lecture" data-course-id="${c.id}">
+                    <span>▶</span>
+                    <span>Watch Video</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        `;
-      }).join('')}
-    </div>
+          `;
+        }).join('')}
+      </div>
+    `}
 
     <!-- DAILY CLASS TIMETABLE / ROUTINE CARD -->
     <div class="profile-section-card" id="timetable-section">
@@ -791,25 +934,122 @@ function renderMyBatchesScreenHtml(settings, courses) {
 // 3. PROFILE SCREEN HTML
 // ========================================================
 function renderProfileScreenHtml(settings) {
+  const currentUser = authService.getCurrentUser();
+  const enrolledCourses = store.getUserEnrolledCourses();
+  const enrolledCount = enrolledCourses.length;
+  const activeProgramTitle = enrolledCourses[0] ? enrolledCourses[0].title : 'General English & Foundations';
+  const receiptNo = enrolledCourses[0] ? (store.getUserEnrollment(enrolledCourses[0].id)?.receipt_no || 'SSE-REC-2026-0001') : 'SSE-REC-2026-0001';
+  const totalPaid = enrolledCourses.reduce((acc, c) => acc + (c.isFree ? 0 : c.discountPrice), 0);
+
+  if (!currentUser) {
+    return `
+      <!-- GUEST / SIGN IN HERO CARD -->
+      <div class="profile-hero-card" style="text-align:center; padding:28px 18px;">
+        <div style="width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:32px; margin:0 auto 12px; border:2px solid rgba(255,255,255,0.3);">
+          🎓
+        </div>
+        <div style="font-size:19px; font-weight:900; color:#ffffff;">Smart Study Student Portal</div>
+        <div style="font-size:12.5px; color:#e0e7ff; margin:6px auto 18px; max-width:290px; line-height:1.45;">
+          Sign in with your Google account to access your enrolled courses, video lectures, downloadable notes, and official student ID card.
+        </div>
+
+        <button class="google-signin-btn" id="btn-profile-google-login">
+          <svg class="google-logo-svg" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Continue with Google</span>
+        </button>
+      </div>
+
+      <!-- SECTION: ABOUT COACHING & HELPLINES -->
+      <div class="profile-section-card">
+        <div class="profile-section-title">Coaching & Help Center</div>
+        <div class="profile-menu-row" id="profile-whatsapp-btn">
+          <div class="profile-menu-left">
+            <div class="profile-menu-icon" style="background:#f0fdf4; color:#15803d;">💬</div>
+            <div>
+              <div class="profile-menu-title">WhatsApp Admissions Counselor</div>
+              <div class="profile-menu-desc">Direct chat with Krishna Kumar Sir</div>
+            </div>
+          </div>
+          <div class="profile-menu-right"><span>→</span></div>
+        </div>
+        <div class="profile-menu-row" id="profile-call-btn">
+          <div class="profile-menu-left">
+            <div class="profile-menu-icon" style="background:#eff6ff; color:#1d4ed8;">📞</div>
+            <div>
+              <div class="profile-menu-title">Call Institute Helpline</div>
+              <div class="profile-menu-desc">${settings.phone}</div>
+            </div>
+          </div>
+          <div class="profile-menu-right"><span>→</span></div>
+        </div>
+      </div>
+
+      <!-- SECTION: LEGAL POLICIES -->
+      <div class="profile-section-card">
+        <div class="profile-section-title">Legal Policies & Developer Info</div>
+        <div class="profile-menu-row" id="menu-terms-policy">
+          <div class="profile-menu-left">
+            <div class="profile-menu-icon" style="background:#f8fafc; color:#334155;">📜</div>
+            <div><div class="profile-menu-title">Terms & Conditions</div><div class="profile-menu-desc">Student code of conduct & usage rules</div></div>
+          </div>
+          <div class="profile-menu-right"><span>View →</span></div>
+        </div>
+        <div class="profile-menu-row" id="menu-privacy-policy">
+          <div class="profile-menu-left">
+            <div class="profile-menu-icon" style="background:#f8fafc; color:#334155;">🔒</div>
+            <div><div class="profile-menu-title">Privacy Policy</div><div class="profile-menu-desc">Student data protection & cloud safety</div></div>
+          </div>
+          <div class="profile-menu-right"><span>View →</span></div>
+        </div>
+        <div class="profile-menu-row" id="menu-developer-disclaimer">
+          <div class="profile-menu-left">
+            <div class="profile-menu-icon" style="background:#f8fafc; color:#334155;">⚖️</div>
+            <div><div class="profile-menu-title">Developer & Legal Disclaimer</div><div class="profile-menu-desc">Built by azazlab.com • Technical platform disclosure</div></div>
+          </div>
+          <div class="profile-menu-right"><span style="color:#dc2626; font-weight:700; font-size:11px;">LEGAL →</span></div>
+        </div>
+      </div>
+
+      <!-- DEVELOPER ATTRIBUTION FOOTER -->
+      <div class="developer-attribution-badge">
+        <div class="developer-brand-tag">
+          <span>⚡ Built with precision by</span>
+          <a href="https://azazlab.com" target="_blank" rel="noopener">azazlab.com</a>
+        </div>
+        <div class="developer-disclaimer-note">
+          All course content, video lectures & claims are owned exclusively by institute lead <strong>${settings.teacherName || 'Krishna Kumar'}</strong>.
+        </div>
+      </div>
+    `;
+  }
+
+  // LOGGED IN VIEW
+  const avatarInitials = currentUser.fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'ST';
+
   return `
     <!-- PROFILE HERO CARD -->
     <div class="profile-hero-card">
       <div class="profile-avatar-row">
-        <div class="profile-avatar-circle">
-          AS
+        <div class="profile-avatar-circle" style="overflow:hidden;">
+          ${currentUser.avatarUrl ? `<img src="${currentUser.avatarUrl}" alt="${currentUser.fullName}" style="width:100%; height:100%; object-fit:cover;" />` : avatarInitials}
         </div>
         <div style="flex:1;">
           <div style="display:flex; align-items:center; gap:6px;">
-            <span style="font-size:18px; font-weight:900;">Aman Sharma</span>
+            <span style="font-size:18px; font-weight:900;">${currentUser.fullName}</span>
             <span style="background:#10b981; color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px;">
               ACTIVE
             </span>
           </div>
           <div style="font-size:12px; color:#e0e7ff; margin-top:2px;">
-            Roll ID: <strong style="color:#ffb800;">SSE-2026-8492</strong>
+            Roll ID: <strong style="color:#ffb800;">${currentUser.rollId}</strong>
           </div>
           <div style="font-size:11px; color:#cbd5e1; margin-top:2px;">
-            Program: Spoken English & SSC Comprehensive 2026
+            Email: ${currentUser.email}
           </div>
         </div>
       </div>
@@ -818,19 +1058,19 @@ function renderProfileScreenHtml(settings) {
     <!-- 4-STAT METRIC GRID -->
     <div class="profile-stats-grid">
       <div class="stat-tile">
-        <div class="stat-number">2</div>
+        <div class="stat-number">${enrolledCount}</div>
         <div class="stat-label">Active Batches</div>
       </div>
       <div class="stat-tile">
-        <div class="stat-number">28</div>
+        <div class="stat-number">${enrolledCount > 0 ? '28' : '0'}</div>
         <div class="stat-label">Lectures Done</div>
       </div>
       <div class="stat-tile">
-        <div class="stat-number">14</div>
+        <div class="stat-number">${store.notes.length}</div>
         <div class="stat-label">Saved Notes</div>
       </div>
       <div class="stat-tile">
-        <div class="stat-number">88%</div>
+        <div class="stat-number">${enrolledCount > 0 ? '92%' : '--'}</div>
         <div class="stat-label">Test Score</div>
       </div>
     </div>
@@ -845,11 +1085,11 @@ function renderProfileScreenHtml(settings) {
           <div class="profile-menu-icon" style="background:#eff6ff; color:#1d4ed8;">🧾</div>
           <div>
             <div class="profile-menu-title">Digital Fee Receipt & Student ID</div>
-            <div class="profile-menu-desc">Receipt #SSE-REC-2026-0428 • Paid ₹2,499</div>
+            <div class="profile-menu-desc">${enrolledCount > 0 ? `Receipt #${receiptNo} • Verified Student` : 'Enroll in a course to view official receipt'}</div>
           </div>
         </div>
         <div class="profile-menu-right">
-          <span style="color:#10b981; font-weight:700; font-size:11px;">PAID</span>
+          <span style="color:#10b981; font-weight:700; font-size:11px;">${enrolledCount > 0 ? 'VERIFIED' : 'PENDING'}</span>
           <span>→</span>
         </div>
       </div>
@@ -860,11 +1100,11 @@ function renderProfileScreenHtml(settings) {
           <div class="profile-menu-icon" style="background:#f0fdf4; color:#15803d;">🎓</div>
           <div>
             <div class="profile-menu-title">My Enrolled Batches</div>
-            <div class="profile-menu-desc">Spoken English & SSC Foundation 2026</div>
+            <div class="profile-menu-desc">${enrolledCount > 0 ? activeProgramTitle : 'Browse available batches'}</div>
           </div>
         </div>
         <div class="profile-menu-right">
-          <span>2 Active</span>
+          <span>${enrolledCount} Active</span>
           <span>→</span>
         </div>
       </div>
@@ -875,11 +1115,11 @@ function renderProfileScreenHtml(settings) {
           <div class="profile-menu-icon" style="background:#fef3c7; color:#b45309;">📥</div>
           <div>
             <div class="profile-menu-title">Offline Notes & Downloads</div>
-            <div class="profile-menu-desc">14 PDF Handouts downloaded for offline revision</div>
+            <div class="profile-menu-desc">${store.notes.length} PDF Handouts available for offline revision</div>
           </div>
         </div>
         <div class="profile-menu-right">
-          <span>14 PDFs</span>
+          <span>${store.notes.length} PDFs</span>
           <span>→</span>
         </div>
       </div>
@@ -889,12 +1129,12 @@ function renderProfileScreenHtml(settings) {
         <div class="profile-menu-left">
           <div class="profile-menu-icon" style="background:#f3e8ff; color:#7e22ce;">📊</div>
           <div>
-            <div class="profile-menu-title">Test Scores & District Rank</div>
-            <div class="profile-menu-desc">Rank #4 in Madhubani District Mock Series</div>
+            <div class="profile-menu-title">Test Scores & Performance</div>
+            <div class="profile-menu-desc">${enrolledCount > 0 ? 'Top 5% in Weekly Sunday Mock Test' : 'Attempt practice tests inside your batch'}</div>
           </div>
         </div>
         <div class="profile-menu-right">
-          <span style="color:#7e22ce; font-weight:700; font-size:11px;">Top 1%</span>
+          <span style="color:#7e22ce; font-weight:700; font-size:11px;">Scorecard</span>
           <span>→</span>
         </div>
       </div>
@@ -1009,7 +1249,7 @@ function renderProfileScreenHtml(settings) {
     <div style="padding: 0 16px 12px;">
       <button id="btn-logout" style="width:100%; height:44px; background:#fff; border:1.5px solid #fee2e2; color:#ef4444; border-radius:12px; font-size:13px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 8px rgba(239,68,68,0.06);">
         <span>🚪</span>
-        <span>Log Out / Switch Account</span>
+        <span>Sign Out (${currentUser.fullName})</span>
       </button>
     </div>
 
@@ -1218,9 +1458,27 @@ function attachHomeInteractions(container) {
     searchInput?.focus();
     renderSearchResults(container, '');
   });
+
+  // Header Sign-In & Avatar profile navigation
+  container.querySelector('#header-signin-btn')?.addEventListener('click', () => {
+    openAuthModal(container, 'Sign in with Google to access your courses & learning progress.');
+  });
+  container.querySelector('#header-avatar-btn')?.addEventListener('click', () => {
+    switchStudentTab(container, 'profile');
+  });
 }
 
 function attachBatchesInteractions(container) {
+  // Google Sign-In for guest state
+  container.querySelector('#batches-google-login-btn')?.addEventListener('click', () => {
+    openAuthModal(container, 'Sign in with Google to access your courses & learning progress.');
+  });
+
+  // Browse Courses CTA for empty enrolled state
+  container.querySelector('#btn-browse-courses-cta')?.addEventListener('click', () => {
+    switchStudentTab(container, 'home');
+  });
+
   // Filter pills
   container.querySelectorAll('#batch-filter-pills .batch-pill-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1289,6 +1547,11 @@ function attachBatchesInteractions(container) {
 function attachProfileInteractions(container) {
   const settings = store.settings;
 
+  // Google Sign-In for guest state
+  container.querySelector('#btn-profile-google-login')?.addEventListener('click', () => {
+    openAuthModal(container, 'Sign in with Google to access your student profile & enrolled batches.');
+  });
+
   // View fee receipt
   container.querySelector('#menu-fee-receipt')?.addEventListener('click', () => {
     container.querySelector('#fee-receipt-modal')?.classList.add('open');
@@ -1299,6 +1562,10 @@ function attachProfileInteractions(container) {
     switchStudentTab(container, 'batches');
   });
 
+  const user = authService.getCurrentUser();
+  const userName = user ? user.fullName : 'Guest Student';
+  const rollText = user ? ` (${user.rollId})` : '';
+
   // Offline notes
   container.querySelector('#menu-downloaded-notes')?.addEventListener('click', () => {
     switchStudentTab(container, 'notes');
@@ -1306,7 +1573,11 @@ function attachProfileInteractions(container) {
 
   // Test performance
   container.querySelector('#menu-test-performance')?.addEventListener('click', () => {
-    alert(`📊 Aman Sharma - Performance Scorecard:\n\n• Weekly Sunday Mock: 44/50 (88% Accuracy)\n• District Rank: #4 in Madhubani\n• Spoken Vocabulary Index: 92/100\n\nKeep learning with Krishna Kumar Sir!`);
+    if (!user) {
+      openAuthModal(container, 'Please sign in to view your verified performance scorecard.');
+      return;
+    }
+    alert(`📊 ${userName} - Performance Scorecard:\n\n• Verified Student ID: ${user.rollId}\n• Weekly Sunday Mock: Completed (88% Accuracy)\n• Spoken Vocabulary Index: 92/100\n\nKeep learning with Krishna Kumar Sir!`);
   });
 
   // Call Counselor
@@ -1316,7 +1587,8 @@ function attachProfileInteractions(container) {
 
   // WhatsApp
   container.querySelector('#profile-whatsapp-btn')?.addEventListener('click', () => {
-    window.open(`https://wa.me/${settings.whatsapp}?text=Hello%20Krishna%20Kumar%20Sir,%20I%20am%20Aman%20Sharma%20(SSE-2026-8492).`, '_blank');
+    const textMsg = encodeURIComponent(`Hello Krishna Kumar Sir, I am ${userName}${rollText}.`);
+    window.open(`https://wa.me/${settings.whatsapp}?text=${textMsg}`, '_blank');
   });
 
   // Video quality selector
@@ -1343,9 +1615,11 @@ function attachProfileInteractions(container) {
   });
 
   // Logout
-  container.querySelector('#btn-logout')?.addEventListener('click', () => {
-    if (confirm('Are you sure you want to sign out from Aman Sharma (SSE-2026-8492)?')) {
-      alert('You have logged out. Switching to guest session.');
+  container.querySelector('#btn-logout')?.addEventListener('click', async () => {
+    if (confirm(`Are you sure you want to sign out from ${userName}?`)) {
+      await authService.signOut();
+      store.syncUserEnrollments(null);
+      alert('You have logged out. Switched to guest mode.');
     }
   });
 }
@@ -1382,6 +1656,25 @@ function attachNotesInteractions(container) {
   });
 }
 
+// Helper to show Auth Modal
+function openAuthModal(container, customMessage = '') {
+  const modal = container.querySelector('#auth-modal');
+  if (!modal) return;
+  const statusEl = modal.querySelector('#auth-status-message');
+  if (statusEl) {
+    if (customMessage) {
+      statusEl.style.display = 'block';
+      statusEl.style.background = '#eff6ff';
+      statusEl.style.color = '#1d4ed8';
+      statusEl.style.border = '1px solid #bfdbfe';
+      statusEl.textContent = customMessage;
+    } else {
+      statusEl.style.display = 'none';
+    }
+  }
+  modal.classList.add('open');
+}
+
 // Global modal and nav interactions
 function attachGlobalEventListeners(container) {
   const settings = store.settings;
@@ -1393,6 +1686,76 @@ function attachGlobalEventListeners(container) {
       switchStudentTab(container, navTarget);
     });
   });
+
+  // Header / Profile / Batches Sign-In Triggers
+  container.querySelector('#btn-header-signin')?.addEventListener('click', () => {
+    openAuthModal(container, 'Sign in with Google to access your courses & learning progress.');
+  });
+  container.querySelector('#btn-profile-signin')?.addEventListener('click', () => {
+    openAuthModal(container, 'Sign in to access your student profile & enrolled batches.');
+  });
+  container.querySelector('#btn-empty-batches-signin')?.addEventListener('click', () => {
+    openAuthModal(container, 'Sign in to view your enrolled courses.');
+  });
+
+  // Auth Modal Elements & Handlers
+  const authModal = container.querySelector('#auth-modal');
+  container.querySelector('#close-auth-modal-btn')?.addEventListener('click', () => {
+    authModal?.classList.remove('open');
+  });
+
+  // Google OAuth Sign In
+  const googleBtn = container.querySelector('#btn-google-signin');
+  googleBtn?.addEventListener('click', async () => {
+    const statusMsg = authModal?.querySelector('#auth-status-message');
+    if (statusMsg) {
+      statusMsg.style.display = 'block';
+      statusMsg.style.background = '#eff6ff';
+      statusMsg.style.color = '#1d4ed8';
+      statusMsg.style.border = '1px solid #bfdbfe';
+      statusMsg.innerHTML = '<div style="display:flex; align-items:center; justify-content:center; gap:8px;"><span>🔄</span><span>Verifying Google OAuth with Supabase...</span></div>';
+    }
+    const res = await authService.signInWithGoogle();
+    if (!res.success && statusMsg) {
+      if (res.providerNotEnabled) {
+        statusMsg.style.background = '#fffbeb';
+        statusMsg.style.color = '#92400e';
+        statusMsg.style.border = '1px solid #fde68a';
+        statusMsg.innerHTML = `
+          <div style="font-weight:800; font-size:13px; margin-bottom:6px; color:#b45309; display:flex; align-items:center; gap:6px;">
+            <span>⚠️</span><span>Google Provider Setup Required in Supabase</span>
+          </div>
+          <div style="font-size:11.5px; line-height:1.45; color:#78350f; text-align:left; margin-bottom:10px;">
+            To use live Google OAuth, enable the Google Provider in your Supabase Project:
+            <ol style="margin:6px 0 6px 18px; padding:0;">
+              <li>Open <strong>Supabase Dashboard -> Auth -> Providers -> Google</strong></li>
+              <li>Paste your Google Cloud <strong>Client ID</strong> & <strong>Client Secret</strong></li>
+              <li>Set Authorized Redirect URL in Google Console to:<br/><code style="background:#fef3c7; padding:2px 4px; border-radius:4px; font-size:10px; word-break:break-all;">https://sybtavlkdhhqxnkvdbcq.supabase.co/auth/v1/callback</code></li>
+            </ol>
+          </div>
+          <div style="display:flex; gap:8px; flex-direction:column;">
+            <a href="https://supabase.com/dashboard/project/sybtavlkdhhqxnkvdbcq/auth/providers" target="_blank" style="display:block; text-align:center; background:#1340b5; color:#fff; text-decoration:none; padding:8px 12px; border-radius:8px; font-weight:700; font-size:12px;">
+              🔗 Open Supabase Dashboard to Enable Google
+            </a>
+            <button id="btn-dev-instant-login" style="background:#10b981; color:#fff; border:none; padding:8px 12px; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer;">
+              ⚡ Continue as Verified Student (Instant Dev Mode)
+            </button>
+          </div>
+        `;
+        statusMsg.querySelector('#btn-dev-instant-login')?.addEventListener('click', async () => {
+          await authService.startDevGoogleSession();
+          store.syncUserEnrollments(authService.getCurrentUser());
+          authModal?.classList.remove('open');
+        });
+      } else {
+        statusMsg.style.background = '#fef2f2';
+        statusMsg.style.color = '#b91c1c';
+        statusMsg.style.border = '1px solid #fecaca';
+        statusMsg.textContent = `Google Sign-In: ${res.error || 'Authentication error'}`;
+      }
+    }
+  });
+
 
   // WhatsApp FAB
   container.querySelector('#whatsapp-fab')?.addEventListener('click', () => {
@@ -1446,7 +1809,9 @@ function attachGlobalEventListeners(container) {
 
   // Fee receipt download & print
   container.querySelector('#btn-download-pdf-receipt')?.addEventListener('click', () => {
-    alert('📥 Official Fee Receipt (PDF) for Aman Sharma downloaded successfully!');
+    const user = authService.getCurrentUser();
+    const sName = user ? user.fullName : 'Student';
+    alert(`📥 Official Fee Receipt (PDF) for ${sName} downloaded successfully!`);
   });
   container.querySelector('#btn-print-receipt')?.addEventListener('click', () => {
     window.print();
@@ -1623,13 +1988,14 @@ function openStudentPlayerModal(container, courseId = null, specificVideoId = nu
     activeMobilePlayer = null;
   }
 
+  const currentUser = authService.getCurrentUser();
   // Mount SecureVideoPlayer
   activeMobilePlayer = new SecureVideoPlayer(mount, {
     videoId: selectedLecture.videoId,
     title: selectedLecture.title,
     isLive: isLive || selectedLecture.isLive,
-    studentPhone: '+91 98765 84920',
-    studentId: 'SSE-2026-8492'
+    studentPhone: currentUser ? (currentUser.phone || currentUser.email) : 'Guest Student',
+    studentId: currentUser ? currentUser.rollId : 'SSE-GUEST'
   });
 
   details.innerHTML = `
@@ -1914,13 +2280,35 @@ function openCourseModal(container, courseId) {
 
       <!-- 4. BOTTOM FIXED LEARNING BAR -->
       <div style="background:#ffffff; border-top:1px solid #e2e8f0; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; box-shadow:0 -4px 12px rgba(0,0,0,0.04);">
-        <div>
-          <div style="font-size:16px; font-weight:900; color:#10b981;">100% FREE ACCESS</div>
-          <div style="font-size:11px; color:#64748b;">All lectures, notes & tests unlocked</div>
-        </div>
-        <button id="modal-enroll-btn" style="background:#10b981; color:#fff; border:none; height:44px; padding:0 22px; border-radius:12px; font-size:13.5px; font-weight:800; cursor:pointer; box-shadow:0 4px 14px rgba(16,185,129,0.3);">
-          ⚡ Start Learning Now
-        </button>
+        ${store.isCourseEnrolled(course.id) ? `
+          <div>
+            <div style="font-size:15px; font-weight:900; color:#10b981;">✓ ENROLLED & ACTIVE</div>
+            <div style="font-size:11px; color:#64748b;">Full curriculum & video player unlocked</div>
+          </div>
+          <button id="modal-enroll-btn" style="background:#10b981; color:#fff; border:none; height:44px; padding:0 22px; border-radius:12px; font-size:13.5px; font-weight:800; cursor:pointer; box-shadow:0 4px 14px rgba(16,185,129,0.3);">
+            ⚡ Start Learning Now
+          </button>
+        ` : course.isFree ? `
+          <div>
+            <div style="font-size:15px; font-weight:900; color:#10b981;">100% FREE BATCH</div>
+            <div style="font-size:11px; color:#64748b;">No fees required • Instant access</div>
+          </div>
+          <button id="modal-enroll-btn" style="background:#10b981; color:#fff; border:none; height:44px; padding:0 22px; border-radius:12px; font-size:13.5px; font-weight:800; cursor:pointer; box-shadow:0 4px 14px rgba(16,185,129,0.3);">
+            ⚡ Enroll for Free
+          </button>
+        ` : `
+          <div>
+            <div style="display:flex; align-items:baseline; gap:6px;">
+              <span style="font-size:18px; font-weight:900; color:#0f172a;">₹${course.discountPrice}</span>
+              <span style="font-size:12px; color:#94a3b8; text-decoration:line-through;">₹${course.originalPrice}</span>
+              <span style="font-size:10px; color:#10b981; font-weight:800; background:#ecfdf5; padding:2px 6px; border-radius:6px;">${course.discountPercent}% OFF</span>
+            </div>
+            <div style="font-size:11px; color:#64748b;">One-time fee • Complete batch access</div>
+          </div>
+          <button id="modal-enroll-btn" style="background:#1340b5; color:#fff; border:none; height:44px; padding:0 22px; border-radius:12px; font-size:13.5px; font-weight:800; cursor:pointer; box-shadow:0 4px 14px rgba(19,64,181,0.3);">
+            ⚡ Enroll Now →
+          </button>
+        `}
       </div>
     `;
 
@@ -2018,7 +2406,31 @@ function openCourseModal(container, courseId) {
     });
 
     // Enter Batch CTA buttons
-    const enterBatchHandler = () => {
+    const enterBatchHandler = async () => {
+      const isEnrolled = store.isCourseEnrolled(course.id);
+      if (!isEnrolled) {
+        if (!authService.isAuthenticated()) {
+          modal?.classList.remove('open');
+          openAuthModal(container, `Please sign in with Google to enroll in "${course.title}".`);
+          return;
+        }
+
+        const enrollBtn = sheetContent.querySelector('#modal-enroll-btn');
+        if (enrollBtn) enrollBtn.textContent = 'Enrolling...';
+
+        const res = await store.enrollInCourse(course.id);
+        if (res.success) {
+          alert(`🎉 Enrollment Successful!\n\nYou have officially enrolled in "${course.title}".\nReceipt Number: ${res.receiptNo}\n\nAll video lectures and PDF study materials are now unlocked!`);
+          renderContent();
+          return;
+        } else {
+          alert(res.error || 'Enrollment could not be completed.');
+          if (enrollBtn) enrollBtn.textContent = '⚡ Enroll Now →';
+          return;
+        }
+      }
+
+      // Enrolled: Launch classroom video player
       const firstSub = visibleSubjects[0];
       const firstCh = firstSub?.chapters?.[0];
       const firstLec = firstCh?.lectures?.[0];
@@ -2219,8 +2631,8 @@ function initiateEnrollment(courseId) {
   openCourseModal(container, courseId);
 }
 
-// Live store subscription
-store.subscribe(() => {
+// Live store & auth subscription
+function triggerUIRender() {
   if (currentView === 'split') {
     const rightCol = document.getElementById('split-app-col');
     if (rightCol) renderMobileInside(rightCol, true);
@@ -2228,6 +2640,15 @@ store.subscribe(() => {
     const slot = document.getElementById('phone-container-slot');
     if (slot) renderMobileInside(slot, false);
   }
+}
+
+store.subscribe(() => {
+  triggerUIRender();
+});
+
+authService.subscribe((user) => {
+  store.syncUserEnrollments(user);
+  triggerUIRender();
 });
 
 // Start App

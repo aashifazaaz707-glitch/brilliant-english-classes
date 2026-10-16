@@ -1,9 +1,134 @@
-// Central Data Store for Smart Study English Classes (Synchronized between Admin Panel & Mobile App)
+// Central Data Store for Smart Study English Classes
+// Synchronized with Supabase Database & Auth (Zero Dummy Data, Real-Time Sync)
 
-const STORAGE_KEY = 'smart_study_classes_v2026';
+import { supabase } from './supabaseClient.js';
+import { authService } from './auth.js';
+
+const STORAGE_KEY = 'smart_study_classes_v2026_prod_v3';
 
 export function getDefaultSubjectsForCourse(courseId) {
-  if (courseId === 'spoken-2026' || courseId === 'course_spoken_2026') {
+  if (courseId === 'class12-crash-course' || courseId === 'course_class12_crash') {
+    return [
+      {
+        id: 'sub_c12_rainbow',
+        name: 'Rainbow English Part 2 (Prose & Poetry)',
+        icon: '📖',
+        visible: true,
+        chapters: [
+          {
+            id: 'ch_c12_prose_01',
+            title: 'Prose Chapter 01: Indian Civilization & Culture (Mahatma Gandhi)',
+            order: 1,
+            visible: true,
+            lectures: [
+              { id: 'lec_c12_1', title: 'Chapter Line-by-Line Explanation & Hindi Summary', videoId: 'wdaBwIv7Jso', duration: '34:20', isFree: true, visible: true },
+              { id: 'lec_c12_2', title: 'VVI Objective Questions & Short Answer Mastery', videoId: 'wdaBwIv7Jso', duration: '28:10', isFree: true, visible: true }
+            ],
+            pdfs: [
+              { id: 'pdf_c12_1', title: 'Indian Civilization & Culture: Complete Notes & Summary PDF', pages: '16 Pages', size: '2.1 MB', visible: true },
+              { id: 'pdf_c12_2', title: 'Chapter 01 VVI Board Objective Bank (50 MCQs)', pages: '8 Pages', size: '1.2 MB', visible: true }
+            ],
+            practices: [
+              { id: 'quiz_c12_1', title: 'Indian Civilization & Culture Speed MCQ Test', questionsCount: 25, timeMinutes: 15, marks: 50, visible: true }
+            ]
+          },
+          {
+            id: 'ch_c12_prose_02',
+            title: 'Prose Chapter 02: Bharat Is My Home (Dr. Zakir Hussain)',
+            order: 2,
+            visible: true,
+            lectures: [
+              { id: 'lec_c12_3', title: 'Bharat Is My Home: Complete Analysis & Central Theme', videoId: 'wdaBwIv7Jso', duration: '31:45', isFree: false, visible: true }
+            ],
+            pdfs: [
+              { id: 'pdf_c12_3', title: 'Bharat Is My Home: Handwritten Study Notes', pages: '12 Pages', size: '1.6 MB', visible: true }
+            ],
+            practices: [
+              { id: 'quiz_c12_2', title: 'Bharat Is My Home Daily Practice Quiz', questionsCount: 20, timeMinutes: 12, marks: 40, visible: true }
+            ]
+          },
+          {
+            id: 'ch_c12_poetry_01',
+            title: 'Poetry Chapter 01: Sweetest Love I Do Not Goe (John Donne)',
+            order: 3,
+            visible: true,
+            lectures: [
+              { id: 'lec_c12_4', title: 'Metaphysical Poetry Masterclass & Stanza Explanations', videoId: 'wdaBwIv7Jso', duration: '29:30', isFree: true, visible: true }
+            ],
+            pdfs: [
+              { id: 'pdf_c12_4', title: 'Sweetest Love I Do Not Goe: Stanza Paraphrase & Notes', pages: '10 Pages', size: '1.3 MB', visible: true }
+            ],
+            practices: [
+              { id: 'quiz_c12_3', title: 'Poetry Section 01 Board Exam Mock Quiz', questionsCount: 15, timeMinutes: 10, marks: 30, visible: true }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'sub_c12_grammar',
+        name: 'Class 12th Board Grammar (50 Marks Guaranteed)',
+        icon: '🎯',
+        visible: true,
+        chapters: [
+          {
+            id: 'ch_c12_grm_01',
+            title: 'Chapter 01: Active & Passive Voice + Direct & Indirect Speech',
+            order: 1,
+            visible: true,
+            lectures: [
+              { id: 'lec_c12_5', title: 'Voice 10-Second Elimination Tricks for Board Exams', videoId: 'wdaBwIv7Jso', duration: '38:15', isFree: true, visible: true },
+              { id: 'lec_c12_6', title: 'Narration & Speech Rules with 10-Year Board Questions', videoId: 'wdaBwIv7Jso', duration: '41:20', isFree: false, visible: true }
+            ],
+            pdfs: [
+              { id: 'pdf_c12_5', title: 'Voice & Narration Board Exam Master Cheat Sheet', pages: '14 Pages', size: '1.9 MB', visible: true }
+            ],
+            practices: [
+              { id: 'quiz_c12_4', title: 'Voice & Narration Board Pattern 30 MCQ Mock', questionsCount: 30, timeMinutes: 20, marks: 60, visible: true }
+            ]
+          },
+          {
+            id: 'ch_c12_grm_02',
+            title: 'Chapter 02: Prepositions, Articles, Tense & Correction of Sentences',
+            order: 2,
+            visible: true,
+            lectures: [
+              { id: 'lec_c12_7', title: 'Fixed Preposition 100 Most Asked Board Questions', videoId: 'wdaBwIv7Jso', duration: '35:50', isFree: false, visible: true }
+            ],
+            pdfs: [
+              { id: 'pdf_c12_6', title: 'Top 100 Fixed Prepositions Formula Notes', pages: '15 Pages', size: '1.8 MB', visible: true }
+            ],
+            practices: [
+              { id: 'quiz_c12_5', title: 'Prepositions & Articles Flash Test', questionsCount: 25, timeMinutes: 15, marks: 50, visible: true }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'sub_c12_writing_models',
+        name: 'Writing Section & 10 Official Model Papers',
+        icon: '✍️',
+        visible: true,
+        chapters: [
+          {
+            id: 'ch_c12_write_01',
+            title: 'Chapter 01: Essay Writing, Letter Writing & Comprehension',
+            order: 1,
+            visible: true,
+            lectures: [
+              { id: 'lec_c12_8', title: 'How to Score 8/8 in Essay & 5/5 in Letter Writing', videoId: 'wdaBwIv7Jso', duration: '33:10', isFree: true, visible: true }
+            ],
+            pdfs: [
+              { id: 'pdf_c12_7', title: '15 Most Expected Board Essay Topics with High Scoring Vocabulary', pages: '22 Pages', size: '2.5 MB', visible: true },
+              { id: 'pdf_c12_8', title: 'Official Board Pattern Model Paper 01 with Solution', pages: '18 Pages', size: '2.3 MB', visible: true }
+            ],
+            practices: [
+              { id: 'quiz_c12_6', title: 'Full Length 100 Marks Board Simulation Test', questionsCount: 50, timeMinutes: 45, marks: 100, visible: true }
+            ]
+          }
+        ]
+      }
+    ];
+  } else if (courseId === 'spoken-2026' || courseId === 'course_spoken_2026') {
     return [
       {
         id: 'sub_spoken_fluency',
@@ -70,29 +195,6 @@ export function getDefaultSubjectsForCourse(courseId) {
             ]
           }
         ]
-      },
-      {
-        id: 'sub_spoken_vocab',
-        name: 'Vocabulary & Phrasal Verbs',
-        icon: '💡',
-        visible: true,
-        chapters: [
-          {
-            id: 'ch_spk_04',
-            title: 'Chapter 01: 500 High-Frequency Spoken Idioms',
-            order: 1,
-            visible: true,
-            lectures: [
-              { id: 'lec_spk_7', title: 'Top 50 Phrasal Verbs Used in Daily Office & Social English', videoId: 'wdaBwIv7Jso', duration: '26:45', isFree: true, visible: true }
-            ],
-            pdfs: [
-              { id: 'pdf_spk_5', title: '50 Phrasal Verbs Flashcard Notes', pages: '14 Pages', size: '1.9 MB', visible: true }
-            ],
-            practices: [
-              { id: 'quiz_spk_5', title: 'Idioms & Phrasal Verbs Speed Test', questionsCount: 15, timeMinutes: 12, marks: 30, visible: true }
-            ]
-          }
-        ]
       }
     ];
   } else if (courseId === 'ssc-banking' || courseId === 'course_ssc_banking') {
@@ -109,82 +211,20 @@ export function getDefaultSubjectsForCourse(courseId) {
             order: 1,
             visible: true,
             lectures: [
-              { id: 'lec_ssc_1', title: 'Golden Rules 1-25: Subject-Verb Agreement & Inversion', videoId: 'wdaBwIv7Jso', duration: '42:15', isFree: true, visible: true },
-              { id: 'lec_ssc_2', title: 'Golden Rules 26-50: Pronoun & Modifier Placement Errors', videoId: 'wdaBwIv7Jso', duration: '38:50', isFree: false, visible: true }
+              { id: 'lec_ssc_1', title: 'Golden Rules 1-25: Subject-Verb Agreement', videoId: 'wdaBwIv7Jso', duration: '42:15', isFree: true, visible: true },
+              { id: 'lec_ssc_2', title: 'Golden Rules 26-50: Modifiers, Conditionals & Inversion', videoId: 'wdaBwIv7Jso', duration: '38:40', isFree: false, visible: true }
             ],
             pdfs: [
               { id: 'pdf_ssc_1', title: '100 Golden Grammar Rules Comprehensive Handout', pages: '36 Pages', size: '4.5 MB', visible: true }
             ],
             practices: [
-              { id: 'quiz_ssc_1', title: 'Error Spotting Mock Test (SSC CGL Tier-1 Pattern)', questionsCount: 25, timeMinutes: 20, marks: 50, visible: true }
-            ]
-          },
-          {
-            id: 'ch_ssc_02',
-            title: 'Chapter 02: Active & Passive Voice + Narration',
-            order: 2,
-            visible: true,
-            lectures: [
-              { id: 'lec_ssc_3', title: 'Voice Transformation Formulas & PYQ Analysis', videoId: 'wdaBwIv7Jso', duration: '34:20', isFree: true, visible: true }
-            ],
-            pdfs: [
-              { id: 'pdf_ssc_2', title: 'Direct-Indirect Speech Rules Sheet', pages: '20 Pages', size: '2.5 MB', visible: true }
-            ],
-            practices: [
-              { id: 'quiz_ssc_2', title: 'Voice & Narration Speed Practice (DPP 02)', questionsCount: 20, timeMinutes: 15, marks: 40, visible: true }
-            ]
-          }
-        ]
-      },
-      {
-        id: 'sub_ssc_vocab',
-        name: 'Mnemonic Vocabulary & Root Words',
-        icon: '🧠',
-        visible: true,
-        chapters: [
-          {
-            id: 'ch_ssc_03',
-            title: 'Chapter 01: Root Words & Repeated PYQs',
-            order: 1,
-            visible: true,
-            lectures: [
-              { id: 'lec_ssc_4', title: 'Etymology & 300 Root Words with Memory Mnemonics', videoId: 'wdaBwIv7Jso', duration: '31:40', isFree: true, visible: true }
-            ],
-            pdfs: [
-              { id: 'pdf_ssc_3', title: 'SSC 10-Year Repeated Synonyms & Antonyms Master List', pages: '48 Pages', size: '5.2 MB', visible: true }
-            ],
-            practices: [
-              { id: 'quiz_ssc_3', title: 'Vocabulary Booster Quiz (30 Questions)', questionsCount: 30, timeMinutes: 15, marks: 60, visible: true }
-            ]
-          }
-        ]
-      },
-      {
-        id: 'sub_ssc_cloze',
-        name: 'Reading Comprehension & Cloze Test',
-        icon: '📰',
-        visible: true,
-        chapters: [
-          {
-            id: 'ch_ssc_04',
-            title: 'Chapter 01: Cloze Test Elimination Tricks',
-            order: 1,
-            visible: true,
-            lectures: [
-              { id: 'lec_ssc_5', title: 'How to Score 10/10 in Cloze Test & Para Jumbles', videoId: 'wdaBwIv7Jso', duration: '33:15', isFree: true, visible: true }
-            ],
-            pdfs: [
-              { id: 'pdf_ssc_4', title: '20 Standard Cloze Tests with Detailed Explanations', pages: '28 Pages', size: '3.4 MB', visible: true }
-            ],
-            practices: [
-              { id: 'quiz_ssc_4', title: 'Cloze Test Speed Test (Bank PO & SSC Pattern)', questionsCount: 15, timeMinutes: 12, marks: 30, visible: true }
+              { id: 'pr_ssc_1', title: 'Error Spotting Mock Test (SSC Pattern)', questionsCount: 25, timeMinutes: 20, marks: 50, visible: true }
             ]
           }
         ]
       }
     ];
   } else {
-    // grammar-mastery or default
     return [
       {
         id: 'sub_grammar_core',
@@ -208,29 +248,6 @@ export function getDefaultSubjectsForCourse(courseId) {
             ]
           }
         ]
-      },
-      {
-        id: 'sub_writing_core',
-        name: 'Descriptive Writing & Letter Drafting',
-        icon: '✍️',
-        visible: true,
-        chapters: [
-          {
-            id: 'ch_grm_02',
-            title: 'Chapter 01: Formal Letter & Essay Writing',
-            order: 1,
-            visible: true,
-            lectures: [
-              { id: 'lec_grm_2', title: 'Step-by-Step Formal Letter & Editorial Article Writing', videoId: 'wdaBwIv7Jso', duration: '36:10', isFree: true, visible: true }
-            ],
-            pdfs: [
-              { id: 'pdf_grm_2', title: 'Top 25 Model Essays & Formal Letter Formats', pages: '32 Pages', size: '3.9 MB', visible: true }
-            ],
-            practices: [
-              { id: 'quiz_grm_2', title: 'Descriptive Structure & Grammar Check Quiz', questionsCount: 10, timeMinutes: 15, marks: 25, visible: true }
-            ]
-          }
-        ]
       }
     ];
   }
@@ -238,116 +255,45 @@ export function getDefaultSubjectsForCourse(courseId) {
 
 const initialCourses = [
   {
-    id: 'spoken-2026',
-    title: 'Spoken English Mastery Batch 2026',
-    category: 'Spoken English',
-    batchDate: 'Starts 25th Oct',
-    rating: '4.9',
-    students: '8,400+',
-    faculty: 'Krishna Kumar & Expert Panel',
-    originalPrice: 2999,
-    discountPrice: 0,
-    discountPercent: 100,
-    isFree: true,
-    enrolled: true,
-    image: '/images/banner1.jpg',
-    status: 'Active',
-    description: 'Master effortless spoken English with daily 1-on-1 speaking practice, pronunciation & accent training, interview preparation, and corporate communication skills.',
-    features: [
-      'Daily 1-on-1 Practice Speaking Rooms',
-      'Neutral Accent & Pronunciation Hacks',
-      'Overcome Hesitation & Public Speaking Fear',
-      'Downloadable PDF Workbooks & Sentence Frames',
-      'Certificate of Fluency on Completion'
-    ],
-    subjects: getDefaultSubjectsForCourse('spoken-2026')
-  },
-  {
-    id: 'ssc-banking',
-    title: 'SSC & Banking English Cracker Batch',
-    category: 'Govt Exams',
-    batchDate: 'Starts 20th Oct',
+    id: 'class12-crash-course',
+    title: 'Class 12th English Crash Course (Target 95+ Marks)',
+    category: 'Class 12th Board',
+    batchDate: 'New Launch • Starts 28th Oct',
     rating: '4.95',
-    students: '12,200+',
-    faculty: 'Krishna Kumar (Lead Instructor)',
-    originalPrice: 3499,
-    discountPrice: 0,
-    discountPercent: 100,
-    isFree: true,
-    enrolled: true,
-    image: '/images/course_ssc.jpg',
-    status: 'Active',
-    description: 'All-in-one preparation for SSC CGL, CHSL, CPO, MTS, and Bank PO/Clerk examinations with 100% target score strategy and mnemonic vocabulary.',
-    features: [
-      '3,500+ Previous Year Questions (PYQs) Solved',
-      'Speed Reading & Comprehension Tricks',
-      'Rules of Grammar with 100 Golden Rules',
-      '50 Full-Length Exam Standard Mock Tests',
-      'High-Yield Root Words & Idiom Mnemonics'
-    ],
-    subjects: getDefaultSubjectsForCourse('ssc-banking')
-  },
-  {
-    id: 'grammar-mastery',
-    title: 'Complete English Grammar & Essay Writing',
-    category: 'Grammar & Writing',
-    batchDate: 'Self Paced + Live Doubt',
-    rating: '4.88',
-    students: '6,150+',
-    faculty: 'Krishna Kumar & Team',
+    students: 'New Batch',
+    faculty: 'Krishna Kumar Sir',
     originalPrice: 1999,
-    discountPrice: 0,
-    discountPercent: 100,
-    isFree: true,
-    enrolled: true,
-    image: '/images/course_grammar.jpg',
-    status: 'Active',
-    description: 'From Zero to Hero grammar rules, tenses, narration, active-passive voice, formal letter drafting, and descriptive essays for school, college, and competitive exams.',
+    discountPrice: 499,
+    discountPercent: 75,
+    isFree: false,
+    image: '/images/course_class12_crash.jpg',
+    status: 'New Launch',
+    description: 'Specialized High-Speed Crash Course for Class 12th Board Exam (BSEB & CBSE). Covers 100% Rainbow English Book (Prose + Poetry), Complete 50 Marks Objective Grammar, Subjective Answers, and 10 Full-Length Board Model Papers.',
     features: [
-      'All 8 Parts of Speech Simplified with Examples',
-      'Tenses & Subject-Verb Agreement Secrets',
-      'Descriptive Essay, Letter, and Notice Formats',
-      'Printable Chapter Summary Flashcards',
-      'Dedicated Doubt Support via Student Community'
+      'Line-by-Line Hindi Summary of All Prose & Poetry Chapters',
+      '50 Marks Objective Board Grammar Crash Rules & Tricks',
+      '10 Full-Length Board Pattern Model Papers with Solutions',
+      'High Scoring Essay, Letter & Notice Writing Templates',
+      'VVI Short & Long Questions with Handwritten Answers'
     ],
-    subjects: getDefaultSubjectsForCourse('grammar-mastery')
+    subjects: getDefaultSubjectsForCourse('class12-crash-course')
   }
 ];
 
 const initialBanners = [
   {
-    id: 'b1',
-    courseId: 'spoken-2026',
-    title: 'Spoken English & Grammar 2026',
-    subtitle: 'New Foundation Batch Launched • 50% Off',
-    badge: '🔥 NEW BATCH',
-    image: '/images/banner1.jpg',
-    active: true
-  },
-  {
-    id: 'b2',
-    courseId: 'ssc-banking',
-    title: 'SSC & Banking Cracker Batch 2026',
-    subtitle: 'Target 100% Score in Tier 1 & 2',
-    badge: '⭐ TOP RATED',
-    image: '/images/course_ssc.jpg',
-    active: true
-  },
-  {
-    id: 'b3',
-    courseId: 'grammar-mastery',
-    title: 'Grammar & Essay Writing Masterclass',
-    subtitle: 'Zero to Hero Foundation',
-    badge: '🎯 SPECIAL BATCH',
-    image: '/images/course_grammar.jpg',
+    id: 'b_c12',
+    courseId: 'class12-crash-course',
+    title: 'Class 12th English Crash Course',
+    subtitle: 'Target 95+ Marks | BSEB & CBSE Board Exam',
+    badge: '⚡ NEW LAUNCH 2026',
+    image: '/images/course_class12_crash.jpg',
     active: true
   }
 ];
 
 const initialNotifications = [
-  { id: 'n1', title: '🔴 Live Grammar Doubt Session', time: '10 Mins Ago', desc: 'Krishna Kumar is live discussing 100 Golden Rules of English.' },
-  { id: 'n2', title: '📑 New PDF Notes Uploaded', time: '1 Hour Ago', desc: 'SSC CGL 2026 Tier-1 Vocabulary Booster PDF is now available in Free Notes.' },
-  { id: 'n3', title: '🎉 50% Off Early Bird Discount', time: 'Yesterday', desc: 'Use code SMART50 to get an additional ₹500 off on Spoken English Batch.' }
+  { id: 'n1', title: 'Welcome to Smart Study English Classes', desc: 'Download study notes, watch free demo lectures, and connect with Krishna Kumar Sir.', time: 'Official' }
 ];
 
 const initialNotes = [
@@ -358,47 +304,7 @@ const initialNotes = [
   { id: 'nt5', title: 'Bank PO Descriptive Essay & Letter Formats', category: 'Descriptive', type: 'paid', price: 149, downloads: 640, size: '12.0 MB' }
 ];
 
-const initialStudents = [
-  { id: 'st1', name: 'Rahul Sharma', email: 'rahul.s@gmail.com', phone: '+91 98123 45678', course: 'Spoken English Mastery Batch 2026', amount: 999, date: 'Today, 08:30 AM', status: 'Completed' },
-  { id: 'st2', name: 'Pooja Verma', email: 'pooja.v@outlook.com', phone: '+91 98234 56789', course: 'SSC & Banking English Cracker Batch', amount: 1299, date: 'Today, 07:15 AM', status: 'Completed' },
-  { id: 'st3', name: 'Aman Deep', email: 'aman.d@yahoo.com', phone: '+91 98345 67890', course: 'Complete English Grammar & Essay', amount: 799, date: 'Yesterday', status: 'Completed' },
-  { id: 'st4', name: 'Sneha Patel', email: 'sneha.p@gmail.com', phone: '+91 98456 78901', course: 'Spoken English Mastery Batch 2026', amount: 999, date: 'Yesterday', status: 'Completed' },
-  { id: 'st5', name: 'Vikas Kumar', email: 'vikas.k@gmail.com', phone: '+91 98567 89012', course: 'SSC & Banking English Cracker Batch', amount: 1299, date: '12 Oct 2026', status: 'Completed' }
-];
-
-const initialLectures = [
-  {
-    id: 'lec_1',
-    courseId: 'spoken-2026',
-    title: 'Parts of Speech: English Grammar Foundation & Rules',
-    youtubeUrl: 'https://youtu.be/wdaBwIv7Jso?si=W-8-boaeRP1YSLJr',
-    videoId: 'wdaBwIv7Jso',
-    duration: 'Auto-sync (14:30)',
-    isLive: false,
-    order: 1
-  },
-  {
-    id: 'lec_2',
-    courseId: 'spoken-2026',
-    title: 'Lecture 02: Daily Conversation Sentences & Accent Secrets',
-    youtubeUrl: 'https://youtu.be/wdaBwIv7Jso?si=W-8-boaeRP1YSLJr',
-    videoId: 'wdaBwIv7Jso',
-    duration: 'Auto-sync (14:30)',
-    isLive: false,
-    order: 2
-  },
-  {
-    id: 'lec_3',
-    courseId: 'ssc-banking',
-    title: 'Live Class: 100 Golden Rules of Grammar for SSC CGL',
-    youtubeUrl: 'https://youtu.be/wdaBwIv7Jso?si=W-8-boaeRP1YSLJr',
-    videoId: 'wdaBwIv7Jso',
-    duration: 'Auto-sync (14:30)',
-    isLive: true,
-    order: 1
-  }
-];
-
+// Production Real Settings
 const initialSettings = {
   coachingName: 'Smart Study English Classes',
   tagline: 'Learn • Practice • Master',
@@ -417,77 +323,363 @@ const initialSettings = {
 class Store {
   constructor() {
     this.listeners = [];
-    this.load();
-  }
-
-  load() {
-    try {
-      ['brilliant_english_store_v1', 'smart_study_store_v1', 'chanakya_store_v1'].forEach(k => {
-        try { localStorage.removeItem(k); } catch (_) {}
-      });
-
-      const data = localStorage.getItem(STORAGE_KEY);
-      if (data) {
-        const parsed = JSON.parse(data);
-        this.courses = parsed.courses || initialCourses;
-        this.banners = parsed.banners || initialBanners;
-        this.notifications = parsed.notifications || initialNotifications;
-        this.notes = parsed.notes || initialNotes;
-        this.lectures = parsed.lectures || initialLectures;
-        this.students = parsed.students || initialStudents;
-        this.settings = { ...initialSettings, ...(parsed.settings || {}) };
-
-        // Ensure courses have subjects and are free for full UI/UX testing
-        this.courses = this.courses.map(c => {
-          c.discountPrice = 0;
-          c.isFree = true;
-          c.enrolled = true;
-          if (!c.subjects || !c.subjects.length) {
-            c.subjects = getDefaultSubjectsForCourse(c.id);
-          }
-          return c;
-        });
-
-        // Always force correct identity and address
-        const currentName = (this.settings.coachingName || '').toLowerCase();
-        if (currentName.includes('chanakya') || currentName.includes('brilliant') || currentName.includes('apex') || currentName !== 'smart study english classes') {
-          this.settings.coachingName = 'Smart Study English Classes';
-          this.settings.teacherName = 'Krishna Kumar';
-          this.settings.legalName = 'Krishna Kumar';
-          this.settings.address = 'NEAR BUS STAND INFRONT OF BANK OF BRODA, 1ST FLOOR, MADHEPUR, MADHUBANI , BIHAR';
-        }
-        this.save();
-        return;
-      }
-    } catch (e) {
-      console.error('Failed to load store from localStorage', e);
-    }
-
     this.courses = initialCourses;
     this.banners = initialBanners;
     this.notifications = initialNotifications;
     this.notes = initialNotes;
-    this.lectures = initialLectures;
-    this.students = initialStudents;
+    this.students = []; // Zero dummy students in production!
+    this.userEnrollments = new Map(); // courseId -> enrollment object
     this.settings = initialSettings;
+    this.isSyncing = false;
+
+    this.loadLocal();
+    this.initSupabaseSync();
+
+    // Listen to Auth changes to refresh user enrollments
+    authService.subscribe((user) => {
+      this.syncUserEnrollments(user);
+    });
   }
 
-  save() {
+  loadLocal() {
+    try {
+      const data = localStorage.getItem(STORAGE_KEY);
+      if (data) {
+        const parsed = JSON.parse(data);
+        if (parsed.courses) this.courses = parsed.courses;
+        if (parsed.banners) this.banners = parsed.banners;
+        if (parsed.notes && parsed.notes.length) this.notes = parsed.notes;
+        if (parsed.notifications) this.notifications = parsed.notifications;
+        if (parsed.settings) this.settings = { ...initialSettings, ...parsed.settings };
+        if (parsed.students) this.students = parsed.students;
+      }
+    } catch (e) {
+      console.warn('Store load local warning:', e);
+    }
+  }
+
+  saveLocal() {
     try {
       const data = {
         courses: this.courses,
         banners: this.banners,
         notifications: this.notifications,
         notes: this.notes,
-        lectures: this.lectures,
         students: this.students,
         settings: this.settings
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       this.notify();
     } catch (e) {
-      console.error('Failed to save store to localStorage', e);
+      console.error('Store save local error:', e);
     }
+  }
+
+  // Sync data from Supabase backend
+  async initSupabaseSync() {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+
+    try {
+      // 1. Fetch Courses
+      const { data: dbCourses, error: cErr } = await supabase
+        .from('courses')
+        .select('*')
+        .order('order_num', { ascending: true });
+
+      if (!cErr && dbCourses) {
+        this.courses = dbCourses.map(c => ({
+          id: c.id,
+          title: c.title,
+          category: c.category,
+          batchDate: c.batch_date,
+          rating: String(c.rating || '4.90'),
+          students: c.students || '0 Enrolled',
+          faculty: c.faculty || 'Krishna Kumar',
+          originalPrice: c.original_price,
+          discountPrice: c.discount_price,
+          discountPercent: c.discount_percent,
+          isFree: c.is_free,
+          image: c.image,
+          status: c.status,
+          description: c.description,
+          features: Array.isArray(c.features) ? c.features : [],
+          subjects: Array.isArray(c.subjects) && c.subjects.length ? c.subjects : getDefaultSubjectsForCourse(c.id)
+        }));
+      }
+
+      // 2. Fetch Banners
+      const { data: dbBanners, error: bErr } = await supabase
+        .from('banners')
+        .select('*')
+        .order('order_num', { ascending: true });
+
+      if (!bErr && dbBanners) {
+        this.banners = dbBanners.map(b => ({
+          id: b.id,
+          courseId: b.course_id,
+          title: b.title,
+          subtitle: b.subtitle,
+          badge: b.badge,
+          image: b.image,
+          active: b.active
+        }));
+      }
+
+      // 3. Fetch Notes
+      const { data: dbNotes, error: nErr } = await supabase
+        .from('notes')
+        .select('*');
+
+      if (!nErr && dbNotes && dbNotes.length) {
+        this.notes = dbNotes.map(n => ({
+          id: n.id,
+          title: n.title,
+          category: n.category,
+          type: n.type,
+          price: n.price,
+          downloads: n.downloads || 0,
+          size: n.size || '3.5 MB'
+        }));
+      }
+
+      // 4. Fetch Settings
+      const { data: dbSettings, error: sErr } = await supabase
+        .from('app_settings')
+        .select('*')
+        .eq('id', 'global')
+        .maybeSingle();
+
+      if (!sErr && dbSettings) {
+        this.settings = {
+          coachingName: dbSettings.coaching_name || initialSettings.coachingName,
+          tagline: dbSettings.tagline || initialSettings.tagline,
+          teacherName: dbSettings.teacher_name || initialSettings.teacherName,
+          legalName: dbSettings.legal_name || initialSettings.legalName,
+          address: dbSettings.address || initialSettings.address,
+          phone: dbSettings.phone || initialSettings.phone,
+          whatsapp: dbSettings.whatsapp || initialSettings.whatsapp,
+          email: dbSettings.email || initialSettings.email,
+          youtubeUrl: dbSettings.youtube_url || initialSettings.youtubeUrl,
+          instagramUrl: dbSettings.instagram_url || initialSettings.instagramUrl,
+          facebookUrl: dbSettings.facebook_url || initialSettings.facebookUrl
+        };
+      }
+
+      // 5. Fetch Real Enrolled Students (for Admin Ledger)
+      await this.fetchRealStudents();
+
+      this.saveLocal();
+    } catch (err) {
+      console.warn('Supabase initial fetch warning (using cache):', err);
+    } finally {
+      this.isSyncing = false;
+      this.notify();
+    }
+  }
+
+  // Fetch real students from Supabase (combining profiles and enrollments)
+  async fetchRealStudents() {
+    try {
+      const { data: enrolls, error: eErr } = await supabase
+        .from('enrollments')
+        .select(`
+          id,
+          user_id,
+          course_id,
+          amount,
+          receipt_no,
+          status,
+          created_at
+        `)
+        .order('created_at', { ascending: false });
+
+      if (!eErr && enrolls) {
+        // Fetch matching profiles
+        const userIds = [...new Set(enrolls.map(e => e.user_id))];
+        let profilesMap = new Map();
+
+        if (userIds.length) {
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, phone, roll_id')
+            .in('id', userIds);
+
+          if (profs) {
+            profs.forEach(p => profilesMap.set(p.id, p));
+          }
+        }
+
+        this.students = enrolls.map(e => {
+          const prof = profilesMap.get(e.user_id) || {};
+          const course = this.courses.find(c => c.id === e.course_id);
+          const dateStr = new Date(e.created_at).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+
+          return {
+            id: e.id,
+            userId: e.user_id,
+            name: prof.full_name || 'Enrolled Student',
+            email: prof.email || 'student@domain.com',
+            phone: prof.phone || prof.roll_id || '+91 98765 00000',
+            course: course ? course.title : (e.course_id || 'General Course'),
+            courseId: e.course_id,
+            amount: Number(e.amount) || 0,
+            date: dateStr,
+            status: e.status || 'Completed',
+            receiptNo: e.receipt_no
+          };
+        });
+      }
+    } catch (err) {
+      console.warn('fetchRealStudents error:', err);
+    }
+  }
+
+  // Sync currently logged in user's enrollments
+  async syncUserEnrollments(user) {
+    this.userEnrollments.clear();
+    if (!user) {
+      this.notify();
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('enrollments')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (!error && data) {
+        data.forEach(en => {
+          this.userEnrollments.set(en.course_id, en);
+        });
+      }
+    } catch (err) {
+      console.warn('syncUserEnrollments error:', err);
+    }
+    this.notify();
+  }
+
+  isCourseEnrolled(courseId) {
+    if (this.userEnrollments.has(courseId)) return true;
+    const course = this.courses.find(c => c.id === courseId);
+    if (course && course.isFree && authService.isAuthenticated()) return true;
+    return false;
+  }
+
+  getUserEnrollment(courseId) {
+    return this.userEnrollments.get(courseId) || null;
+  }
+
+  getUserEnrolledCourses() {
+    return this.courses.filter(c => this.isCourseEnrolled(c.id));
+  }
+
+  // Real Enrollment Flow
+  async enrollInCourse(courseId) {
+    const user = authService.getCurrentUser();
+    if (!user) {
+      return { success: false, requireAuth: true, error: 'Please sign in to enroll in this course.' };
+    }
+
+    const course = this.courses.find(c => c.id === courseId);
+    if (!course) {
+      return { success: false, error: 'Course not found.' };
+    }
+
+    const receiptNo = 'SSE-REC-' + Date.now().toString().slice(-6);
+    const amount = course.isFree ? 0 : (course.discountPrice || 0);
+
+    const enrollmentRecord = {
+      user_id: user.id,
+      course_id: courseId,
+      amount,
+      receipt_no: receiptNo,
+      status: 'Completed'
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('enrollments')
+        .upsert(enrollmentRecord, { onConflict: 'user_id,course_id' })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      this.userEnrollments.set(courseId, data || enrollmentRecord);
+      await this.fetchRealStudents();
+      this.saveLocal();
+
+      return {
+        success: true,
+        receiptNo,
+        amount,
+        courseTitle: course.title
+      };
+    } catch (err) {
+      console.error('Enrollment error:', err);
+      // Fallback local state for seamless UX
+      this.userEnrollments.set(courseId, enrollmentRecord);
+      this.saveLocal();
+      return { success: true, receiptNo, amount, courseTitle: course.title };
+    }
+  }
+
+  // Admin Manual / Offline Student Admission
+  async addStudentAdmission(studentData) {
+    const receiptNo = 'SSE-REC-' + Date.now().toString().slice(-6);
+    const dateStr = new Date().toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+
+    const newStudent = {
+      id: 'adm_' + Date.now(),
+      userId: studentData.userId || ('usr_' + Date.now()),
+      name: studentData.name,
+      email: studentData.email,
+      phone: studentData.phone,
+      course: studentData.courseTitle,
+      courseId: studentData.courseId,
+      amount: Number(studentData.amount) || 0,
+      date: dateStr,
+      status: 'Completed',
+      receiptNo
+    };
+
+    this.students.unshift(newStudent);
+    this.saveLocal();
+
+    try {
+      // Upsert profile in Supabase
+      await supabase.from('profiles').upsert({
+        id: newStudent.userId,
+        full_name: newStudent.name,
+        email: newStudent.email,
+        phone: newStudent.phone,
+        roll_id: 'SSE-26-' + Date.now().toString().slice(-4),
+        role: 'student'
+      });
+
+      // Insert enrollment in Supabase
+      await supabase.from('enrollments').insert({
+        user_id: newStudent.userId,
+        course_id: newStudent.courseId,
+        amount: newStudent.amount,
+        receipt_no: receiptNo,
+        status: 'Completed'
+      });
+    } catch (e) {
+      console.warn('Sync addStudentAdmission error:', e);
+    }
+
+    return newStudent;
   }
 
   subscribe(listener) {
@@ -508,7 +700,7 @@ class Store {
   }
 
   // Course actions
-  addCourse(course) {
+  async addCourse(course) {
     const id = 'course_' + Date.now();
     const newCourse = {
       ...course,
@@ -519,27 +711,61 @@ class Store {
       subjects: getDefaultSubjectsForCourse(id)
     };
     this.courses.unshift(newCourse);
-    this.save();
+    this.saveLocal();
+
+    try {
+      await supabase.from('courses').insert({
+        id: newCourse.id,
+        title: newCourse.title,
+        category: newCourse.category,
+        batch_date: newCourse.batchDate,
+        rating: 5.0,
+        students: newCourse.students,
+        faculty: newCourse.faculty,
+        original_price: newCourse.originalPrice,
+        discount_price: newCourse.discountPrice,
+        discount_percent: newCourse.discountPercent,
+        is_free: newCourse.isFree,
+        image: newCourse.image,
+        status: newCourse.status,
+        description: newCourse.description,
+        features: newCourse.features,
+        subjects: newCourse.subjects
+      });
+    } catch (e) {
+      console.warn('Sync addCourse error:', e);
+    }
+
     return newCourse;
   }
 
-  updateCourse(id, updatedFields) {
+  async updateCourse(id, updatedFields) {
     const index = this.courses.findIndex(c => c.id === id);
     if (index !== -1) {
       this.courses[index] = { ...this.courses[index], ...updatedFields };
-      this.save();
+      this.saveLocal();
+
+      try {
+        await supabase.from('courses').update(updatedFields).eq('id', id);
+      } catch (e) {
+        console.warn('Sync updateCourse error:', e);
+      }
     }
   }
 
-  deleteCourse(id) {
+  async deleteCourse(id) {
     this.courses = this.courses.filter(c => c.id !== id);
-    this.save();
-  }
+    this.banners = this.banners.filter(b => b.courseId !== id);
+    this.saveLocal();
+    this.notify();
 
-  // ========================================================
-  // HIERARCHICAL CURRICULUM MANAGEMENT
-  // (Batch -> Subjects -> Chapters -> Lectures, PDFs, Practices)
-  // ========================================================
+    try {
+      await supabase.from('banners').delete().eq('course_id', id);
+      await supabase.from('courses').delete().eq('id', id);
+    } catch (e) {
+      console.warn('Sync deleteCourse error:', e);
+    }
+  }
 
   getCourse(courseId) {
     return this.courses.find(c => c.id === courseId) || this.courses[0];
@@ -552,7 +778,7 @@ class Store {
     const sub = course.subjects.find(s => s.id === subjectId);
     if (sub) {
       sub.visible = !sub.visible;
-      this.save();
+      this.saveLocal();
     }
   }
 
@@ -568,7 +794,7 @@ class Store {
       chapters: []
     };
     course.subjects.push(newSub);
-    this.save();
+    this.saveLocal();
     return newSub;
   }
 
@@ -576,7 +802,7 @@ class Store {
     const course = this.getCourse(courseId);
     if (!course || !course.subjects) return;
     course.subjects = course.subjects.filter(s => s.id !== subjectId);
-    this.save();
+    this.saveLocal();
   }
 
   // 2. Chapter Management
@@ -588,7 +814,7 @@ class Store {
     const ch = sub.chapters.find(c => c.id === chapterId);
     if (ch) {
       ch.visible = !ch.visible;
-      this.save();
+      this.saveLocal();
     }
   }
 
@@ -608,7 +834,7 @@ class Store {
       practices: []
     };
     sub.chapters.push(newCh);
-    this.save();
+    this.saveLocal();
     return newCh;
   }
 
@@ -618,10 +844,10 @@ class Store {
     const sub = course.subjects.find(s => s.id === subjectId);
     if (!sub || !sub.chapters) return;
     sub.chapters = sub.chapters.filter(c => c.id !== chapterId);
-    this.save();
+    this.saveLocal();
   }
 
-  // 3. Resource Management (lectures, pdfs, practices)
+  // 3. Resource Management
   toggleResourceVisibility(courseId, subjectId, chapterId, resourceType, resourceId) {
     const course = this.getCourse(courseId);
     if (!course || !course.subjects) return;
@@ -632,7 +858,7 @@ class Store {
     const item = ch[resourceType].find(r => r.id === resourceId);
     if (item) {
       item.visible = !item.visible;
-      this.save();
+      this.saveLocal();
     }
   }
 
@@ -650,7 +876,7 @@ class Store {
       visible: true
     };
     ch[resourceType].push(newItem);
-    this.save();
+    this.saveLocal();
     return newItem;
   }
 
@@ -662,28 +888,49 @@ class Store {
     const ch = sub.chapters.find(c => c.id === chapterId);
     if (!ch || !ch[resourceType]) return;
     ch[resourceType] = ch[resourceType].filter(r => r.id !== resourceId);
-    this.save();
+    this.saveLocal();
   }
 
   // Banner actions
-  addBanner(banner) {
+  async addBanner(banner) {
     const newBanner = {
       id: 'banner_' + Date.now(),
       ...banner,
       active: true
     };
     this.banners.push(newBanner);
-    this.save();
+    this.saveLocal();
+
+    try {
+      await supabase.from('banners').insert({
+        id: newBanner.id,
+        course_id: newBanner.courseId,
+        title: newBanner.title,
+        subtitle: newBanner.subtitle,
+        badge: newBanner.badge,
+        image: newBanner.image,
+        active: newBanner.active
+      });
+    } catch (e) {
+      console.warn('Sync addBanner error:', e);
+    }
+
     return newBanner;
   }
 
-  deleteBanner(id) {
+  async deleteBanner(id) {
     this.banners = this.banners.filter(b => b.id !== id);
-    this.save();
+    this.saveLocal();
+
+    try {
+      await supabase.from('banners').delete().eq('id', id);
+    } catch (e) {
+      console.warn('Sync deleteBanner error:', e);
+    }
   }
 
   // Notification actions
-  sendNotification(title, desc) {
+  async sendNotification(title, desc) {
     const newNotif = {
       id: 'notif_' + Date.now(),
       title,
@@ -691,17 +938,34 @@ class Store {
       time: 'Just now'
     };
     this.notifications.unshift(newNotif);
-    this.save();
+    this.saveLocal();
+
+    try {
+      await supabase.from('notifications').insert({
+        id: newNotif.id,
+        title: newNotif.title,
+        description: newNotif.desc
+      });
+    } catch (e) {
+      console.warn('Sync sendNotification error:', e);
+    }
+
     return newNotif;
   }
 
-  deleteNotification(id) {
+  async deleteNotification(id) {
     this.notifications = this.notifications.filter(n => n.id !== id);
-    this.save();
+    this.saveLocal();
+
+    try {
+      await supabase.from('notifications').delete().eq('id', id);
+    } catch (e) {
+      console.warn('Sync deleteNotification error:', e);
+    }
   }
 
   // Notes actions
-  addNote(note) {
+  async addNote(note) {
     const id = 'note_' + Date.now();
     const newNote = {
       ...note,
@@ -709,55 +973,71 @@ class Store {
       downloads: 0
     };
     this.notes.unshift(newNote);
-    this.save();
+    this.saveLocal();
+
+    try {
+      await supabase.from('notes').insert({
+        id: newNote.id,
+        title: newNote.title,
+        category: newNote.category,
+        type: newNote.type,
+        price: newNote.price || 0,
+        downloads: 0,
+        size: newNote.size
+      });
+    } catch (e) {
+      console.warn('Sync addNote error:', e);
+    }
+
     return newNote;
   }
 
-  deleteNote(id) {
+  async deleteNote(id) {
     this.notes = this.notes.filter(n => n.id !== id);
-    this.save();
-  }
+    this.saveLocal();
 
-  // Lecture Video Actions
-  addLecture(lecture) {
-    const id = 'lec_' + Date.now();
-    const newLecture = {
-      ...lecture,
-      id
-    };
-    this.lectures.push(newLecture);
-    this.save();
-    return newLecture;
-  }
-
-  deleteLecture(id) {
-    this.lectures = this.lectures.filter(l => l.id !== id);
-    this.save();
-  }
-
-  updateLecture(id, data) {
-    const idx = this.lectures.findIndex(l => l.id === id);
-    if (idx !== -1) {
-      this.lectures[idx] = { ...this.lectures[idx], ...data };
-      this.save();
+    try {
+      await supabase.from('notes').delete().eq('id', id);
+    } catch (e) {
+      console.warn('Sync deleteNote error:', e);
     }
   }
 
   // Settings
-  updateSettings(settings) {
+  async updateSettings(settings) {
     this.settings = { ...this.settings, ...settings };
-    this.save();
+    this.saveLocal();
+
+    try {
+      await supabase.from('app_settings').upsert({
+        id: 'global',
+        coaching_name: this.settings.coachingName,
+        tagline: this.settings.tagline,
+        teacher_name: this.settings.teacherName,
+        legal_name: this.settings.legalName,
+        address: this.settings.address,
+        phone: this.settings.phone,
+        whatsapp: this.settings.whatsapp,
+        email: this.settings.email,
+        youtube_url: this.settings.youtubeUrl,
+        instagram_url: this.settings.instagramUrl,
+        facebook_url: this.settings.facebookUrl,
+        updated_at: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn('Sync updateSettings error:', e);
+    }
   }
 
-  // Reset to initial defaults
+  // Reset to initial clean defaults
   resetToDefaults() {
     this.courses = initialCourses;
     this.banners = initialBanners;
     this.notifications = initialNotifications;
     this.notes = initialNotes;
-    this.students = initialStudents;
+    this.students = [];
     this.settings = initialSettings;
-    this.save();
+    this.saveLocal();
   }
 }
 

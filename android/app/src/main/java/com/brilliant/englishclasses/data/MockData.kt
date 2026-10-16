@@ -8,6 +8,14 @@ import com.brilliant.englishclasses.model.QuickActionType
 object MockData {
     val banners = listOf(
         BannerItem(
+            id = "banner_c12",
+            title = "Class 12th English Crash Course",
+            subtitle = "Target 95+ Marks | BSEB & CBSE Board Exam",
+            imageUrl = "course_class12_crash.jpg",
+            targetCourseId = "class12-crash-course",
+            badge = "⚡ NEW LAUNCH 2026"
+        ),
+        BannerItem(
             id = "banner_1",
             title = "Spoken English & Grammar 2026",
             subtitle = "New Foundation Batch Launched • 50% Off",
@@ -50,6 +58,27 @@ object MockData {
     )
 
     val featuredCourses = listOf(
+        Course(
+            id = "class12-crash-course",
+            title = "Class 12th English Crash Course (Target 95+ Marks)",
+            subtitle = "Complete Rainbow English (Prose & Poetry), 50 Marks Grammar & 10 Model Papers",
+            thumbnail = "course_class12_crash.jpg",
+            originalPrice = 1999,
+            discountPrice = 499,
+            rating = 4.95,
+            studentCount = "New Batch",
+            batchDate = "Starts 28th Oct 2026",
+            faculty = "Krishna Kumar Sir",
+            category = "Class 12th Board",
+            features = listOf(
+                "Line-by-Line Hindi Summary of All Chapters",
+                "50 Marks Objective Board Grammar Crash Rules",
+                "10 Full-Length Board Pattern Model Papers",
+                "High Scoring Essay & Letter Writing Formats",
+                "VVI Short & Long Questions with Handwritten Answers"
+            ),
+            subjects = emptyList()
+        ),
         Course(
             id = "course_spoken_2026",
             title = "Spoken English Mastery Batch 2026",
