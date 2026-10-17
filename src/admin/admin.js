@@ -596,6 +596,9 @@ function renderCurriculumTab() {
 
 // 2.2 Course Lectures & Unlisted YouTube Video Tab
 function renderLecturesTab() {
+  if (!store.lectures || store.lectures.length === 0) {
+    store.deriveLecturesFromCourses();
+  }
   const lectures = store.lectures || [];
 
   return `
@@ -606,8 +609,12 @@ function renderLecturesTab() {
         <h3 style="font-size:16px; font-weight:800; color:#fff;">Anti-Leak YouTube Player Protection Active</h3>
       </div>
       <p style="font-size:12.5px; color:#bfdbfe; line-height:1.5;">
-        Paste your unlisted YouTube lecture links here. In the student app, all native YouTube titles, share buttons, channel links, and URLs are shielded and blocked by our custom player layer. Students can only use: <strong>Speed, Play/Pause, Scrubber Bar, and Video Quality</strong>.
+        Paste your unlisted YouTube lecture links here. In the student app, all native YouTube titles, share buttons, channel links, and URLs are shielded and blocked by our custom player layer.
       </p>
+      <div style="background:rgba(255, 184, 0, 0.15); border:1px solid rgba(255, 184, 0, 0.4); border-radius:8px; padding:10px 14px; margin-top:12px; font-size:12px; color:#fde68a; line-height:1.4;">
+        <strong>⚠️ YouTube Studio Requirement for Unlisted Videos:</strong><br>
+        In YouTube Studio for your video, make sure <em>"Allow embedding"</em> (एम्बेड करने की अनुमति दें) is <strong>checked</strong> under <em>Video details &gt; Show more &gt; License &amp; distribution</em>. If embedding is turned off by the channel owner, YouTube blocks external mobile apps with error 152-4.
+      </div>
     </div>
 
     <!-- Add Lecture Form -->
@@ -1178,31 +1185,54 @@ function attachAdminEvents(containerElement, onSwitchToApp, onSwitchToSplit, upd
   // Add Lecture Form Submit
   const formAddLecture = containerElement.querySelector('#form-add-lecture');
   if (formAddLecture) {
-    formAddLecture.addEventListener('submit', (e) => {
+    formAddLecture.addEventListener('submit', async (e) => {
       e.preventDefault();
       const rawUrl = containerElement.querySelector('#lec-url').value.trim();
       const extractedId = extractYouTubeId(rawUrl);
 
-      store.addLecture({
-        courseId: containerElement.querySelector('#lec-course-id').value,
-        title: containerElement.querySelector('#lec-title').value.trim(),
-        youtubeUrl: rawUrl,
-        videoId: extractedId,
-        duration: 'Auto-sync (Native)',
-        isLive: containerElement.querySelector('#lec-is-live').checked
-      });
+      if (!extractedId) {
+        alert('❌ Invalid YouTube URL. Please paste a valid YouTube video link (e.g. https://youtu.be/..., https://www.youtube.com/watch?v=..., unlisted link, or live class link).');
+        return;
+      }
 
-      alert(`✅ Lecture published successfully with Anti-Leak Protection!\n\nVideo ID: ${extractedId}`);
-      update();
+      const submitBtn = formAddLecture.querySelector('button[type="submit"]');
+      const originalText = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Publishing...';
+      }
+
+      try {
+        await store.addLecture({
+          courseId: containerElement.querySelector('#lec-course-id').value,
+          title: containerElement.querySelector('#lec-title').value.trim(),
+          youtubeUrl: rawUrl,
+          videoId: extractedId,
+          duration: 'Auto-sync (Native)',
+          isLive: containerElement.querySelector('#lec-is-live').checked
+        });
+
+        alert(`✅ Lecture published successfully to Android App & Cloud!\n\nVideo ID: ${extractedId}`);
+        formAddLecture.reset();
+        update();
+      } catch (err) {
+        console.error('Error adding lecture:', err);
+        alert('Failed to add lecture: ' + (err.message || err));
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+        }
+      }
     });
   }
 
   // Delete Lecture Action
   containerElement.querySelectorAll('[data-action="delete-lecture"]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-id');
       if (confirm('Delete this lecture video from the course?')) {
-        store.deleteLecture(id);
+        await store.deleteLecture(id);
         update();
       }
     });

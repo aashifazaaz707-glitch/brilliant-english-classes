@@ -327,6 +327,7 @@ class Store {
     this.banners = initialBanners;
     this.notifications = initialNotifications;
     this.notes = initialNotes;
+    this.lectures = [];
     this.students = []; // Zero dummy students in production!
     this.userEnrollments = new Map(); // courseId -> enrollment object
     this.settings = initialSettings;
@@ -352,9 +353,17 @@ class Store {
         if (parsed.notifications) this.notifications = parsed.notifications;
         if (parsed.settings) this.settings = { ...initialSettings, ...parsed.settings };
         if (parsed.students) this.students = parsed.students;
+        if (parsed.lectures && parsed.lectures.length) {
+          this.lectures = parsed.lectures;
+        } else {
+          this.deriveLecturesFromCourses();
+        }
+      } else {
+        this.deriveLecturesFromCourses();
       }
     } catch (e) {
       console.warn('Store load local warning:', e);
+      this.deriveLecturesFromCourses();
     }
   }
 
@@ -365,6 +374,7 @@ class Store {
         banners: this.banners,
         notifications: this.notifications,
         notes: this.notes,
+        lectures: this.lectures,
         students: this.students,
         settings: this.settings
       };
@@ -1072,6 +1082,114 @@ class Store {
     } catch (e) {
       console.warn('Sync deleteNote error:', e);
     }
+  }
+
+  deriveLecturesFromCourses() {
+    const list = [];
+    (this.courses || []).forEach(c => {
+      (c.subjects || []).forEach(sub => {
+        (sub.chapters || []).forEach(ch => {
+          (ch.lectures || []).forEach(lec => {
+            list.push({
+              id: lec.id,
+              courseId: c.id,
+              subjectId: sub.id,
+              chapterId: ch.id,
+              title: lec.title,
+              youtubeUrl: 'https://youtu.be/' + lec.videoId,
+              videoId: lec.videoId,
+              duration: lec.duration || '25:00',
+              isLive: !!lec.isLive
+            });
+          });
+        });
+      });
+    });
+    if (list.length > 0) {
+      this.lectures = list;
+    }
+  }
+
+  // Lecture actions (Unlisted YouTube videos & live classes)
+  async addLecture(lectureData) {
+    const id = 'lec_' + Date.now();
+    const newLec = {
+      id,
+      courseId: lectureData.courseId,
+      title: lectureData.title,
+      youtubeUrl: lectureData.youtubeUrl,
+      videoId: lectureData.videoId,
+      duration: lectureData.duration || '25:00',
+      isLive: !!lectureData.isLive
+    };
+
+    if (!this.lectures) this.lectures = [];
+    this.lectures.unshift(newLec);
+
+    // Also attach to the course's curriculum so the Android app gets it in Supabase
+    const course = this.getCourse(lectureData.courseId);
+    if (course) {
+      if (!course.subjects || course.subjects.length === 0) {
+        course.subjects = [{
+          id: 'sub_' + Date.now(),
+          name: 'Video Lectures & Live Classes',
+          icon: '🎥',
+          visible: true,
+          chapters: []
+        }];
+      }
+      let subject = course.subjects[0];
+      if (!subject.chapters || subject.chapters.length === 0) {
+        subject.chapters = [{
+          id: 'ch_' + Date.now(),
+          title: 'Daily Video Lectures',
+          order: 1,
+          visible: true,
+          lectures: [],
+          pdfs: [],
+          practices: []
+        }];
+      }
+      let chapter = subject.chapters[0];
+      if (!chapter.lectures) chapter.lectures = [];
+      chapter.lectures.push({
+        id,
+        title: lectureData.title,
+        videoId: lectureData.videoId,
+        duration: lectureData.duration || '25:00',
+        isFree: true,
+        visible: true,
+        isLive: !!lectureData.isLive
+      });
+
+      this.syncCourseCurriculum(course.id);
+    }
+
+    this.saveLocal();
+    this.notify();
+    return newLec;
+  }
+
+  async deleteLecture(id) {
+    const lec = (this.lectures || []).find(l => l.id === id);
+    this.lectures = (this.lectures || []).filter(l => l.id !== id);
+
+    if (lec && lec.courseId) {
+      const course = this.getCourse(lec.courseId);
+      if (course && course.subjects) {
+        course.subjects.forEach(sub => {
+          (sub.chapters || []).forEach(ch => {
+            if (ch.lectures) {
+              ch.lectures = ch.lectures.filter(l => l.id !== id && l.videoId !== lec.videoId);
+            }
+          });
+        });
+        this.syncCourseCurriculum(course.id);
+      }
+    }
+
+    this.saveLocal();
+    this.notify();
   }
 
   // Settings

@@ -1,15 +1,19 @@
 import './securePlayer.css';
 
-// Utility to extract YouTube Video ID from any format (short link, full watch, embed, or live)
+// Utility to extract YouTube Video ID from any format (short link, full watch, embed, live, or shorts)
 export function extractYouTubeId(urlOrId) {
-  if (!urlOrId) return 'wdaBwIv7Jso'; // Default test education video
+  if (!urlOrId) return 'wdaBwIv7Jso';
   const clean = urlOrId.trim();
-  if (clean.length === 11 && !clean.includes('/') && !clean.includes('.')) {
+  if (clean.length === 11 && !clean.includes('/') && !clean.includes('.') && !clean.includes('?')) {
     return clean;
   }
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|live\/|shorts\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = clean.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : clean;
+  if (match && match[2] && match[2].length === 11) {
+    return match[2];
+  }
+  const idMatch = clean.match(/([a-zA-Z0-9_-]{11})/);
+  return idMatch ? idMatch[1] : clean;
 }
 
 // Format seconds into MM:SS or HH:MM:SS

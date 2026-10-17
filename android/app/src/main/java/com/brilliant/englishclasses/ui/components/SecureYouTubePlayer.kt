@@ -2,6 +2,8 @@ package com.brilliant.englishclasses.ui.components
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.webkit.JavascriptInterface
@@ -28,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -36,11 +39,12 @@ import java.util.Locale
 
 /**
  * SecureYouTubePlayer:
- * 1. Blocks native YouTube interface (crops off YouTube logo, blocks all clicks to YouTube).
- * 2. Tap ANYWHERE on the video (top/middle screen) toggles Play / Pause.
- * 3. Fetches exact duration dynamically from the video itself.
- * 4. Intercepts video end to show custom Completion Screen, completely blocking YouTube endscreen recommendations.
- * 5. Enforces FLAG_SECURE on the Android Window to prevent screenshots & screen recording.
+ * 1. Uses youtube-nocookie.com with strict-origin-when-cross-origin to bypass Error 150/152/152-4.
+ * 2. Strips the '; wv' WebView identifier from User-Agent to prevent bot-blocking.
+ * 3. Bridges YouTube JS API onError so if a video has owner-restricted embedding, it provides a clean 1-tap fallback.
+ * 4. Tap ANYWHERE on the video toggles Play / Pause.
+ * 5. Floating anti-piracy student watermark.
+ * 6. Enforces FLAG_SECURE on the Android Window to prevent screenshots & screen recording.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -69,20 +73,19 @@ fun SecureYouTubePlayer(
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var isPlaying by remember { mutableStateOf(false) }
     var currentTimeSec by remember { mutableFloatStateOf(0f) }
-    var totalDurationSec by remember { mutableFloatStateOf(870f) } // Dynamically updated via YouTube API
+    var totalDurationSec by remember { mutableFloatStateOf(870f) }
     var isVideoEnded by remember { mutableStateOf(false) }
+    var hasPlaybackError by remember { mutableStateOf(false) }
+    var playbackErrorCode by remember { mutableIntStateOf(0) }
 
     var controlsVisible by remember { mutableStateOf(true) }
     var speedMenuExpanded by remember { mutableStateOf(false) }
-    var qualityMenuExpanded by remember { mutableStateOf(false) }
     var selectedSpeed by remember { mutableStateOf("1.0x") }
-    var selectedQuality by remember { mutableStateOf("Auto (720p)") }
 
-    // Watermark position state
+    // Floating watermark state
     var watermarkXOffset by remember { mutableStateOf(0.15f) }
     var watermarkYOffset by remember { mutableStateOf(0.25f) }
 
-    // Floating watermark timer
     LaunchedEffect(Unit) {
         while (true) {
             delay(5000)
@@ -112,11 +115,19 @@ fun SecureYouTubePlayer(
         }
     }
 
+    // Reset error when videoId changes
+    LaunchedEffect(videoId) {
+        hasPlaybackError = false
+        playbackErrorCode = 0
+        isVideoEnded = false
+        currentTimeSec = 0f
+    }
+
     fun executePlayerCommand(func: String, arg: String = "") {
         val script = if (arg.isEmpty()) {
-            "javascript:(function(){ document.getElementById('yt-frame').contentWindow.postMessage('{\"event\":\"command\",\"func\":\"$func\",\"args\":[]}', '*'); })()"
+            "javascript:(function(){ if(window.player && window.player.$func){ window.player.$func(); } else { document.getElementById('yt-frame')?.contentWindow?.postMessage('{\"event\":\"command\",\"func\":\"$func\",\"args\":[]}', '*'); } })()"
         } else {
-            "javascript:(function(){ document.getElementById('yt-frame').contentWindow.postMessage('{\"event\":\"command\",\"func\":\"$func\",\"args\":[$arg]}', '*'); })()"
+            "javascript:(function(){ if(window.player && window.player.$func){ window.player.$func($arg); } else { document.getElementById('yt-frame')?.contentWindow?.postMessage('{\"event\":\"command\",\"func\":\"$func\",\"args\":[$arg]}', '*'); } })()"
         }
         webViewRef?.loadUrl(script)
     }
@@ -131,6 +142,16 @@ fun SecureYouTubePlayer(
         }
     }
 
+    fun openInYouTubeApp() {
+        try {
+            val appIntent = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:$videoId"))
+            context.startActivity(appIntent)
+        } catch (e: Exception) {
+            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=$videoId"))
+            context.startActivity(webIntent)
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -138,12 +159,8 @@ fun SecureYouTubePlayer(
             .background(Color.Black)
     ) {
         // 1. Android WebView with YouTube embed
-        // Cropped slightly with negative margins to hide any edge logos
         AndroidView(
-            modifier = Modifier
-                .fillMaxSize()
-                .offset(x = (-4).dp, y = (-4).dp)
-                .size(width = 420.dp, height = 240.dp),
+            modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
                 WebView(ctx).apply {
                     layoutParams = ViewGroup.LayoutParams(
@@ -153,10 +170,56 @@ fun SecureYouTubePlayer(
                     settings.javaScriptEnabled = true
                     settings.mediaPlaybackRequiresUserGesture = false
                     settings.domStorageEnabled = true
+                    settings.databaseEnabled = true
                     settings.cacheMode = WebSettings.LOAD_DEFAULT
+                    settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                    
+                    // Crucial: remove WebView identifier from User-Agent to prevent YouTube 152-4 bot-blocking
+                    val originalUa = settings.userAgentString
+                    settings.userAgentString = originalUa
+                        .replace("; wv", "")
+                        .replace("Version/4.0 ", "")
+
                     webChromeClient = WebChromeClient()
                     webViewClient = WebViewClient()
 
+                    class AndroidBridge {
+                        @JavascriptInterface
+                        fun onVideoError(code: Int) {
+                            activity?.runOnUiThread {
+                                hasPlaybackError = true
+                                playbackErrorCode = code
+                            }
+                        }
+
+                        @JavascriptInterface
+                        fun onDurationReady(duration: Float) {
+                            activity?.runOnUiThread {
+                                if (duration > 0) {
+                                    totalDurationSec = duration
+                                }
+                            }
+                        }
+
+                        @JavascriptInterface
+                        fun onStateChange(state: Int) {
+                            activity?.runOnUiThread {
+                                if (state == 1) { // PLAYING
+                                    isPlaying = true
+                                    hasPlaybackError = false
+                                } else if (state == 2) { // PAUSED
+                                    isPlaying = false
+                                } else if (state == 0) { // ENDED
+                                    isPlaying = false
+                                    isVideoEnded = true
+                                }
+                            }
+                        }
+                    }
+
+                    addJavascriptInterface(AndroidBridge(), "AndroidBridge")
+
+                    val originDomain = "https://brilliantenglishclasses.com"
                     val embedHtml = """
                         <!DOCTYPE html>
                         <html>
@@ -165,289 +228,375 @@ fun SecureYouTubePlayer(
                             <style>
                                 * { margin:0; padding:0; box-sizing:border-box; }
                                 html, body { width:100%; height:100%; background:#000000; overflow:hidden; }
-                                iframe { width:100%; height:100%; border:none; pointer-events:none; }
+                                #yt-frame { width:100%; height:100%; border:none; pointer-events:none; }
                             </style>
                         </head>
                         <body>
                             <iframe 
                                 id="yt-frame"
-                                src="https://www.youtube.com/embed/$videoId?enablejsapi=1&controls=0&rel=0&modestbranding=1&disablekb=1&fs=0&iv_load_policy=3&playsinline=1&cc_load_policy=0&cc_lang_pref=none"
-                                allow="autoplay; encrypted-media">
+                                src="https://www.youtube-nocookie.com/embed/$videoId?enablejsapi=1&origin=$originDomain&widget_referrer=$originDomain&playsinline=1&rel=0&modestbranding=1&controls=0&disablekb=1&fs=0&iv_load_policy=3"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowfullscreen>
                             </iframe>
+                            <script>
+                                var tag = document.createElement('script');
+                                tag.src = "https://www.youtube.com/iframe_api";
+                                var firstScriptTag = document.getElementsByTagName('script')[0];
+                                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+                                var player;
+                                function onYouTubeIframeAPIReady() {
+                                    player = new YT.Player('yt-frame', {
+                                        events: {
+                                            'onReady': onPlayerReady,
+                                            'onStateChange': onPlayerStateChange,
+                                            'onError': onPlayerError
+                                        }
+                                    });
+                                }
+                                function onPlayerReady(event) {
+                                    try {
+                                        var dur = player.getDuration();
+                                        if (dur && window.AndroidBridge) {
+                                            window.AndroidBridge.onDurationReady(dur);
+                                        }
+                                    } catch(e) {}
+                                }
+                                function onPlayerStateChange(event) {
+                                    if (window.AndroidBridge) {
+                                        window.AndroidBridge.onStateChange(event.data);
+                                    }
+                                }
+                                function onPlayerError(event) {
+                                    if (window.AndroidBridge) {
+                                        window.AndroidBridge.onVideoError(event.data);
+                                    }
+                                }
+                            </script>
                         </body>
                         </html>
                     """.trimIndent()
 
-                    loadDataWithBaseURL("https://www.youtube.com", embedHtml, "text/html", "UTF-8", null)
+                    loadDataWithBaseURL(originDomain, embedHtml, "text/html", "UTF-8", null)
                     webViewRef = this
                 }
             }
         )
 
         // 2. Anti-Piracy Floating Watermark (Student phone & ID)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp)
-        ) {
-            Text(
-                text = "$studentPhone • $studentId",
-                color = Color.White.copy(alpha = 0.28f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .offset(
-                        x = (watermarkXOffset * 220).dp,
-                        y = (watermarkYOffset * 120).dp
-                    )
-                    .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
-                    .padding(horizontal = 6.dp, vertical = 2.dp)
-            )
-        }
-
-        // 3. FULL-SCREEN TAP-TO-PLAY/PAUSE ZONE (Everything above bottom bar)
-        // Resolves Issue 1: Tap anywhere on the screen toggles play/pause!
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.78f)
-                .align(Alignment.TopCenter)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    togglePlayPause()
-                    controlsVisible = true
-                }
-        ) {
-            // Top Bar: Lecture Title
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .padding(horizontal = 14.dp, vertical = 8.dp)
-                    .align(Alignment.TopCenter),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = lectureTitle,
-                    color = Color.White,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    modifier = Modifier.weight(1f)
-                )
-
-                if (isLive) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .background(Color(0xFFE11D48), RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(5.dp)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "LIVE",
-                            color = Color.White,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-                }
-            }
-
-            // Center Play/Pause Pulsing Indicator
-            if (!isPlaying || controlsVisible) {
-                Box(
-                    modifier = Modifier
-                        .size(54.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF1340B5).copy(alpha = 0.85f))
-                        .align(Alignment.Center),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = "Play/Pause",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-        }
-
-        // 4. BOTTOM BAR: Scrubber Timeline Bar & Dedicated Buttons Row
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .background(Color.Black.copy(alpha = 0.85f))
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-        ) {
-            // Timer Scrubber Bar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = formatTime(currentTimeSec.toInt()),
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Slider(
-                    value = currentTimeSec,
-                    onValueChange = { newVal ->
-                        currentTimeSec = newVal
-                        executePlayerCommand("seekTo", "$newVal, true")
-                    },
-                    valueRange = 0f..totalDurationSec,
-                    colors = SliderDefaults.colors(
-                        thumbColor = Color(0xFFFFB800),
-                        activeTrackColor = Color(0xFF1340B5),
-                        inactiveTrackColor = Color.White.copy(alpha = 0.3f)
-                    ),
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 8.dp)
-                )
-
-                Text(
-                    text = formatTime(totalDurationSec.toInt()),
-                    color = Color.White,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            // Buttons Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { togglePlayPause() },
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "Play/Pause",
-                            tint = Color.White
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            currentTimeSec = (currentTimeSec - 10f).coerceAtLeast(0f)
-                            executePlayerCommand("seekTo", "$currentTimeSec, true")
-                        },
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Replay10,
-                            contentDescription = "Rewind 10s",
-                            tint = Color.White
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            currentTimeSec = (currentTimeSec + 10f).coerceAtMost(totalDurationSec)
-                            executePlayerCommand("seekTo", "$currentTimeSec, true")
-                        },
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Forward10,
-                            contentDescription = "Forward 10s",
-                            tint = Color.White
-                        )
-                    }
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Playback Speed
-                    Box {
-                        TextButton(
-                            onClick = { speedMenuExpanded = true },
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(text = selectedSpeed, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        DropdownMenu(
-                            expanded = speedMenuExpanded,
-                            onDismissRequest = { speedMenuExpanded = false }
-                        ) {
-                            listOf("0.5x", "0.75x", "1.0x", "1.25x", "1.5x", "2.0x").forEach { spd ->
-                                DropdownMenuItem(
-                                    text = { Text(spd, fontWeight = if (spd == selectedSpeed) FontWeight.Bold else FontWeight.Normal) },
-                                    onClick = {
-                                        selectedSpeed = spd
-                                        speedMenuExpanded = false
-                                        val rate = spd.replace("x", "")
-                                        executePlayerCommand("setPlaybackRate", rate)
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(4.dp))
-
-                    // Video Quality
-                    Box {
-                        TextButton(
-                            onClick = { qualityMenuExpanded = true },
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(text = selectedQuality.split(" ")[0], fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        DropdownMenu(
-                            expanded = qualityMenuExpanded,
-                            onDismissRequest = { qualityMenuExpanded = false }
-                        ) {
-                            listOf("Auto (720p)", "1080p HD", "720p HD", "480p SD", "360p Data Saver").forEach { q ->
-                                DropdownMenuItem(
-                                    text = { Text(q, fontWeight = if (q == selectedQuality) FontWeight.Bold else FontWeight.Normal) },
-                                    onClick = {
-                                        selectedQuality = q
-                                        qualityMenuExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // 5. CUSTOM END-SCREEN SHIELD (Blocks YouTube's related video recommendations completely)
-        // Resolves Issue 3: Completely overlays YouTube end-screen!
-        if (isVideoEnded) {
+        if (!hasPlaybackError) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF091E60))
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
+                    .padding(8.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = "$studentPhone • $studentId",
+                    color = Color.White.copy(alpha = 0.28f),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .offset(
+                            x = (watermarkXOffset * 220).dp,
+                            y = (watermarkYOffset * 120).dp
+                        )
+                        .background(Color.Black.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                )
+            }
+        }
+
+        // 3. FULL-SCREEN TAP-TO-PLAY/PAUSE ZONE (Everything above bottom bar)
+        if (!hasPlaybackError) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.78f)
+                    .align(Alignment.TopCenter)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        togglePlayPause()
+                        controlsVisible = true
+                    }
+            ) {
+                // Top Bar: Lecture Title
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                        .align(Alignment.TopCenter),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = lectureTitle,
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isLive) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(Color(0xFFE11D48), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "LIVE",
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+
+                        // Open in YouTube app button
+                        IconButton(
+                            onClick = { openInYouTubeApp() },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = "Watch on YouTube",
+                                tint = Color.White.copy(alpha = 0.85f),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Center Play/Pause Indicator
+                AnimatedVisibility(
+                    visible = !isPlaying && !isVideoEnded,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.65f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Play",
+                            tint = Color.White,
+                            modifier = Modifier.size(34.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // 4. BOTTOM CUSTOM CONTROL BAR
+        if (!hasPlaybackError) {
+            AnimatedVisibility(
+                visible = controlsVisible || !isPlaying,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.8f))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    // Custom Scrubber Slider
+                    Slider(
+                        value = currentTimeSec,
+                        onValueChange = { newTime ->
+                            currentTimeSec = newTime
+                        },
+                        onValueChangeFinished = {
+                            executePlayerCommand("seekTo", "$currentTimeSec, true")
+                        },
+                        valueRange = 0f..totalDurationSec.coerceAtLeast(1f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(20.dp),
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color(0xFFFFB800),
+                            activeTrackColor = Color(0xFFFFB800),
+                            inactiveTrackColor = Color.White.copy(alpha = 0.25f)
+                        )
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Left: Play/Pause button and Time
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = { togglePlayPause() },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = if (isPlaying) "Pause" else "Play",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(4.dp))
+
+                            Text(
+                                text = "${formatTime(currentTimeSec.toInt())} / ${formatTime(totalDurationSec.toInt())}",
+                                color = Color.White,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        // Right: Speed selector
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box {
+                                TextButton(
+                                    onClick = { speedMenuExpanded = true },
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = selectedSpeed,
+                                        color = Color(0xFFFFB800),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                DropdownMenu(
+                                    expanded = speedMenuExpanded,
+                                    onDismissRequest = { speedMenuExpanded = false }
+                                ) {
+                                    listOf("0.75x", "1.0x", "1.25x", "1.5x", "2.0x").forEach { speed ->
+                                        DropdownMenuItem(
+                                            text = { Text(speed, fontWeight = FontWeight.Bold) },
+                                            onClick = {
+                                                selectedSpeed = speed
+                                                val rate = speed.replace("x", "")
+                                                executePlayerCommand("setPlaybackRate", rate)
+                                                speedMenuExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. EMBEDDING RESTRICTION / ERROR FALLBACK CARD
+        if (hasPlaybackError) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF0F172A)),
+                color = Color(0xFF0F172A)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFEF4444).copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = "▶", fontSize = 20.sp, color = Color(0xFFEF4444))
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Watch Video Lecture",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = if (playbackErrorCode == 101 || playbackErrorCode == 150 || playbackErrorCode == 152) {
+                            "This unlisted video has embedding restricted in YouTube Studio. Tap below to watch directly in YouTube:"
+                        } else {
+                            "Playback code ($playbackErrorCode). Tap below to open directly in YouTube:"
+                        },
+                        color = Color(0xFF94A3B8),
+                        fontSize = 11.5.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 16.sp,
+                        modifier = Modifier.padding(horizontal = 14.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = { openInYouTubeApp() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626)),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "▶", fontSize = 12.sp, color = Color.White)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Open on YouTube App",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.5.sp
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // 6. LECTURE COMPLETION SCREEN
+        if (isVideoEnded && !hasPlaybackError) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF0B1329)),
+                color = Color(0xFF0B1329)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Surface(
                         color = Color(0xFF10B981),
                         shape = RoundedCornerShape(20.dp),
@@ -465,17 +614,10 @@ fun SecureYouTubePlayer(
                     Text(
                         text = lectureTitle,
                         color = Color.White,
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 2
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        text = "Great job finishing this class! Revise or replay anytime.",
-                        color = Color(0xFF94A3B8),
-                        fontSize = 12.sp
+                        maxLines = 2,
+                        textAlign = TextAlign.Center
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
